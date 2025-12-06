@@ -1,38 +1,45 @@
-INSTRUCCIONES DE INSTALACIÓN:
+# SED-MICROCONTROLADORES
+## Instalación
+1. Navega hasta la carpeta de tu workspace del stm32cubeide y colocate en ella con el terminal, suele ser algo así: 
+```bash
+cd C:\Users\TuUsuario\STM32CubeIDE\workspace_1.x
+```
+2. Copia la URL del repositorio desde la página principal del github:
 
-1. DESCARGAR
-2. IMPORTAR: En STM32CubeIDE, id a File > Import > Existing Projects into Workspace y seleccionad la carpeta.
-Si faltan archivos de configuración, haced doble clic en el archivo .ioc para que se regenere todo.
-3. CONFIGURACIÓN CRÍTICA DEL RELOJ:
-Abrid el archivo .ioc.
-Id a la pestaña Clock Configuration.
-En la caja central HCLK (MHz), escribid 84 y dadle a Enter.
+     (botón verde "Code" -> HTTPS -> copiar)
+3. Ejecuta:
+```bash
+git clone https://github.com/usuario/nombre-del-repo.git
+```
+4. Abre STM32CubeIDE -> File > Import -> General > Existing Projects into Workspace -> Next -> Select root directory -> Browse -> Carpeta que acabas de clonar en el Paso 1.
 
-MAPA DE PINES RESERVADOS:
-PB10 / PB11: Pantalla LCD (I2C2).
-PA6: Zumbador (PWM).
-PA0: Botón de Inicio (Botón Azul placa).
+⚠️ IMPORTANTE: Asegúrate de que la casilla "Copy projects into workspace" esté DESMARCADA
 
+Debería aparecer el proyecto detectado en la lista "Projects" -> Finish
 
-FUNCIONAMIENTO DEL CODIGO:
-Cread vuestros propios archivos .c y .h (ej: minijuego_simon.c, minijuego_cables.c).
-Programad vuestra lógica ahí y llamadla desde el main.
+##  Mapa de Conexiones (Pinout)
 
-Para decir si el minijuego ha sido ganado o fallado, usad las funciones que he preparado. 
-Primero, poned esto arriba de vuestro archivo:
-#include "game_master.h"
-Cuando ganeis vuestro minijuego llamad a esta funcion:
-Game_RegisterWin(FACE_ID);
+Hardware: **STM32F407G-DISC1**
 
-IDs disponibles:
-FACE_SAFE (Caja fuerte / Potenciómetro)
-FACE_WIRES (Cables)
-FACE_SIMON (Simón Dice)
-FACE_MORSE (Morse)
-FACE_GYRO (Giroscopio / Acelerómetro)
+###  | **Etiqueta** | **Pin**  | **Configuración** | **Estado Lógico** |
+
+| **Pantalla LCD** | `PB10` `PB11` | I2C2_SCL, I2C2_SDA | - |
+
+| **Zumbador(PWM)** | `PD13` | SPI1_MISO | - |
+
+| **BotónInicio** | `PA0` | GPIO_Input | `1` = ON |
+
+| **LEDsSimonDice** | `PD0` hasta `PD5` | GPIO_Output | `1` = ON |
+
+| **BotonesSimonDice** | `PD6` hasta `PD11` | GPIO_Input | `1` = ON |
+
+## Funcionamiento del Código
+Cread vuestros propios archivos .c y .h (ej: minijuego_simon.c, minijuego_cables.c). Programad vuestra lógica ahí y llamadla desde el main.
+
+Para decir si el minijuego ha sido ganado o fallado, usad las funciones que he preparado. Primero, poned esto arriba de vuestro archivo: #include "game_master.h" Cuando ganeis vuestro minijuego llamad a esta funcion: Game_RegisterWin(FACE_ID);
+
+IDs disponibles: FACE_SAFE (Caja fuerte / Potenciómetro) FACE_WIRES (Cables) FACE_SIMON (Simón Dice) FACE_MORSE (Morse) FACE_GYRO (Giroscopio / Acelerómetro)
 
 Ejemplo: Game_RegisterWin(FACE_SIMON); -> La bomba pitará, marcará esa cara como OK y restará 1 al contador de módulos pendientes.
 
-Si el jugador falla llamad a esta función:
-Game_RegisterMistake();
-Esto resta automáticamente 10 segundos de vida y hace sonar la alarma de error.
+Si el jugador falla llamad a esta función: Game_RegisterMistake(); Esto resta automáticamente 10 segundos de vida y hace sonar la alarma de error.
