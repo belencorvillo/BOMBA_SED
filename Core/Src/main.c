@@ -63,7 +63,25 @@ static void MX_I2C2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
 
+    //ZONA CARA MAIN
+    if (GPIO_Pin == GPIO_PIN_0)
+    {
+        // OtroModulo_Handler(GPIO_Pin);
+    }
+    //ZONA SIMON DICE
+    else if (GPIO_Pin >= GPIO_PIN_6 && GPIO_Pin <= GPIO_PIN_11)
+       {
+           SimonDice_Boton_Handler(GPIO_Pin);
+       }
+    // IR AÑADIENDO ZONAS
+    else
+    {
+        // Codigo_De_Otro_Compañero(GPIO_Pin);
+    }
+}
 /* USER CODE END 0 */
 
 /**
@@ -99,7 +117,7 @@ int main(void)
   MX_TIM3_Init();
   MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
-
+  SimonDice_Init();
   // --- PARCHE MANUAL PARA ACTIVAR PULL-UPS EN I2C2 ---
     // (Esto arregla la pantalla LCD)
 
@@ -124,7 +142,7 @@ int main(void)
 
   // Escribir mensaje
   LCD_SetCursor(0, 0); // Fila 0, Columna 0
- LCD_Print("PROYECTO MICROS");
+  LCD_Print("PROYECTO MICROS");
 
   LCD_SetCursor(1, 0); // Fila 1, Columna 0
   LCD_Print("BOMBA ACTIVA");
@@ -146,6 +164,7 @@ int main(void)
   {
 	  // Llamar al cerebro del juego continuamente
 	        Game_Update();
+	        SimonDice_Loop();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
