@@ -17,6 +17,7 @@ void Game_Init(void) {
     // Iniciamos el array de caras
         for(int i=0; i < TOTAL_FACES; i++) {
             bomb.faceSolved[i] = 0;
+            bomb.faceState[i] = 0;
         }
 
     LCD_Init();
@@ -27,6 +28,19 @@ void Game_Init(void) {
     LCD_Print(" BOMBA");
 
     Sound_Init();
+}
+
+//Función para activar caras con el botón de inicio de cada cara
+void Game_ActivateFace(uint8_t face_id) {
+    // Solo activamos si estaba en estado 0 (Pendiente)
+    if (bomb.faceSolved[face_id] == 0 && bomb.faceState[face_id] == 0) {
+
+        bomb.faceState[face_id] = 1; // 1 = ACTIVO (Jugando)
+
+        //meter efecto de sonido de activación (dramático)
+
+        //meter efecto en pantalla OLED
+    }
 }
 
 void Game_Update(void) {
@@ -75,13 +89,21 @@ void Game_Update(void) {
                 LCD_Clear();
                 LCD_SetCursor(0, 0);
                 LCD_Print(" DETONATION IN: ");
-                Sound_PlayWin();
+                Sound_PlayStart();
                 // Pequeña espera para que no detecte el botón pulsado dos veces
                 HAL_Delay(500);
             }
             break;
 
         case STATE_COUNTDOWN:
+
+        	// Escaneo de botones de activación de minijuego (PE7 - PE11)
+
+        		if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_7) == GPIO_PIN_RESET) Game_ActivateFace(FACE_SIMON);
+				else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_8) == GPIO_PIN_RESET) Game_ActivateFace(FACE_MORSE);
+				else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_9) == GPIO_PIN_RESET) Game_ActivateFace(FACE_SAFE);
+				else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_10) == GPIO_PIN_RESET) Game_ActivateFace(FACE_AIRDEF);
+				else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_11) == GPIO_PIN_RESET) Game_ActivateFace(FACE_GYRO);
 
             break;
 
@@ -121,7 +143,7 @@ void Game_RegisterWin(uint8_t face_id) {
 	    LCD_Print(" BOMBA DESACTIVADA");
 	    LCD_SetCursor(1, 0);
 	    LCD_Print("  BUEN TRABAJO!!");
-	    Sound_PlayWin(); // <--- ¡AQUÍ SUENA LA GLORIA!
+	    Sound_PlayWin();
 	}
 
 
@@ -134,8 +156,10 @@ void Game_RegisterWin(uint8_t face_id) {
 		// Verificamos que el ID es válido y que no la habían resuelto ya
 		if (face_id < TOTAL_FACES && bomb.faceSolved[face_id] == 0) {
 
-			//  Marcamos ESTA cara específica como resuelta
+			//  Marcamos cara específica como resuelta
 			bomb.faceSolved[face_id] = 1;
+			//Desactivamos estado
+			bomb.faceState[face_id] = 0;
 
 			//  Restamos uno al contador global
 			bomb.gamesLeft--;
@@ -145,6 +169,8 @@ void Game_RegisterWin(uint8_t face_id) {
 
 			// Sonido de cara resulta
 			Sound_PlayCaraResuelta();
+
+			//Mensaje de éxito en la OLED
 		}
 }
 }
