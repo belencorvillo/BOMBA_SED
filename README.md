@@ -33,6 +33,9 @@ Hardware: **STM32F407G-DISC1**
 
 | **BotonesSimonDice** | `PD6` hasta `PD11` | GPIO_Input | `1` = ON |
 
+| **BotonesActivaciónCaras** | `PE7` hasta `PE11` | GPIO_Input | `1` = ON |
+
+
 ## Funcionamiento del Código
 Cread vuestros propios archivos .c y .h (ej: minijuego_simon.c, minijuego_cables.c). Programad vuestra lógica ahí y llamadla desde el main.
 
