@@ -1,100 +1,114 @@
 #include "sounds.h"
+#include "main.h"
 
-// Importamos el manejador del Timer 3 desde main.c
 extern TIM_HandleTypeDef htim3;
 
 void Sound_Init(void) {
-    // Nos aseguramos de que el PWM empiece apagado
+    // Apagar Buzzer (PA6)
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
+    // El Altavoz (PC6) empieza apagado por el PWM
+}
+
+//FUNCIONES BUZZER
+
+
+// Función interna para el buzzer
+static void Buzzer_Tone(uint16_t duration_ms) {
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);   // ON
+    HAL_Delay(duration_ms);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET); // OFF
+}
+
+void Sound_Buzzer_Beep(void) {
+    Buzzer_Tone(50); // Bip corto de 50ms
+}
+
+void Sound_Buzzer_DoubleBeep(void) {
+    // Simula "Doble Velocidad" haciendo dos bips rápidos en el mismo tick
+    Buzzer_Tone(30);
+    HAL_Delay(50);
+    Buzzer_Tone(30);
+}
+
+void Sound_Buzzer_Arming(void) {
+    // Señal al iniciar el juego
+    Buzzer_Tone(80);
+    HAL_Delay(50);
+    Buzzer_Tone(80);
+    HAL_Delay(50);
+    Buzzer_Tone(200);
+}
+
+
+//FUNCIONES ALTAVOZ
+
+// Función interna para tocar nota en el altavoz
+static void Speaker_Tone(uint16_t period, uint16_t duration_ms) {
+    if (period > 0) {
+        __HAL_TIM_SET_AUTORELOAD(&htim3, period);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, period / 2); // 50% Duty
+        HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+    }
+    HAL_Delay(duration_ms);
     HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
 }
 
-// Función maestra para tocar una nota
-void Sound_PlayTone(uint16_t frequency, uint16_t duration_ms) {
-    if (frequency == 0) {
-        HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-        HAL_Delay(duration_ms);
-        return;
+void Sound_Speaker_Startup(void) {
+    // Melodía inicio
+    Speaker_Tone(NOTE_G4, 100);
+    HAL_Delay(20);
+    Speaker_Tone(NOTE_C5, 100);
+    HAL_Delay(20);
+    Speaker_Tone(NOTE_E5, 100);
+    HAL_Delay(20);
+    Speaker_Tone(NOTE_G5, 400);
+    HAL_Delay(50);
+}
+
+void Sound_Speaker_WinSmall(void) {
+    // Pequeña victoria (Cara resuelta)
+    Speaker_Tone(NOTE_E5, 100);
+    HAL_Delay(50);
+    Speaker_Tone(NOTE_C6, 200);
+}
+
+void Sound_Speaker_WinTotal(void) {
+    // Gran Victoria (Cubo resuelto)
+    Speaker_Tone(NOTE_C5, 150);
+    Speaker_Tone(NOTE_E5, 150);
+    Speaker_Tone(NOTE_G5, 150);
+    Speaker_Tone(NOTE_C6, 600);
+}
+
+void Sound_Speaker_Siren(void) {
+    // Sirena emergencia
+    // Subida
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+    for (int i = 2000; i > 1000; i -= 50) {
+        __HAL_TIM_SET_AUTORELOAD(&htim3, i);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, i / 2);
+        HAL_Delay(2);
     }
+    // Bajada
+    for (int i = 1000; i < 2000; i += 50) {
+        __HAL_TIM_SET_AUTORELOAD(&htim3, i);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, i / 2);
+        HAL_Delay(2);
+    }
+    HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
+}
 
-    // 1. Calculamos el periodo para esa frecuencia
-    // Reloj base = 1 MHz (gracias al Prescaler 84-1)
-    uint32_t period = 1000000 / frequency;
-
-    // 2. Configuramos el ARR (Frecuencia)
-    __HAL_TIM_SET_AUTORELOAD(&htim3, period - 1);
-
-    // 3. Configuramos el CCR (Volumen/Duty Cycle) al 50%
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, period / 2);
-
-    // 4. Arrancamos el sonido
+void Sound_Speaker_Explosion(void) {
+    // SONIDO EXPLOSIÓN
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 
-    // 5. Esperamos lo que dure la nota
-    HAL_Delay(duration_ms);
-
-    // 6. Paramos el sonido
-    HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-}
-
-void Sound_PlayBeep(void) {
-    // Un pitido corto y agudo (tipo cuenta atrás de bomba)
-    Sound_PlayTone(2000, 50); // 2000Hz durante 50ms
-}
-
-void Sound_PlayStart(void) {
-    // Melodía de inicio (tipo Zelda o similar simple)
-    Sound_PlayTone(NOTE_E4, 100);
-    HAL_Delay(50);
-    Sound_PlayTone(NOTE_E4, 100);
-    HAL_Delay(50);
-    Sound_PlayTone(NOTE_C5, 300);
-}
-
-void Sound_PlayError(void) {
-    // Sonido grave de error
-    Sound_PlayTone(150, 300);
-}
-
-
-void Sound_PlayPanic(void) {
-    // Doble pitido rápido y agudo
-    Sound_PlayTone(2000, 50);  // 2kHz, 50ms
-    HAL_Delay(50);             // Silencio corto
-    Sound_PlayTone(2000, 50);  // 2kHz, 50ms
-}
-
-
-void Sound_PlayExplosion(void) {
-    // Efecto de caída de bomba (Frequency Sweep)
-    // Baja de 1000Hz a 50Hz rápidamente
-    for (uint16_t i = 1000; i > 50; i -= 10) {
-        Sound_PlayTone(i, 5); // Notas muy cortas (5ms)
+    // Bajamos desde 1000 (Agudo) hasta 10000 (Muy grave/Click)
+    for (int i = 1000; i < 15000; i += 50) {
+        __HAL_TIM_SET_AUTORELOAD(&htim3, i);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, i / 2);
+        HAL_Delay(3); // Duración de la caída
     }
-    // Final grave y largo
-    Sound_PlayTone(50, 2000);
-}
 
-void Sound_PlayWin(void) {
-    // Arpegio de victoria (Do Mayor rápido hacia arriba)
-    // C5 -> E5 -> G5 -> C6
-
-    Sound_PlayTone(523, 100); // Do (C5)
-    HAL_Delay(20);            // Pequeña pausa para separar notas
-
-    Sound_PlayTone(659, 100); // Mi (E5)
-    HAL_Delay(20);
-
-    Sound_PlayTone(784, 100); // Sol (G5)
-    HAL_Delay(20);
-
-    // Nota final más larga y aguda
-    Sound_PlayTone(1047, 600); // Do agudo (C6)
-}
-void Sound_PlayCaraResuelta(void) {
-    // Sonido de "Checkpoint" o "Éxito Parcial"
-    // Dos notas rápidas ascendentes (Sol -> Do agudo)
-
-    Sound_PlayTone(784, 80);  // Sol (G5)
-    HAL_Delay(20);            // Breve separación
-    Sound_PlayTone(1047, 150); // Do (C6) - Un poco más largo
+    HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
+    HAL_Delay(500); // Silencio dramático post-explosión
 }

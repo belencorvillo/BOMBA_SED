@@ -1,16 +1,76 @@
 #include "game_master.h"
 #include "lcd_i2c.h"
-#include "display_7seg.h"
 #include "sounds.h"
 #include <stdio.h>
+
+//INCLUDES PARA LA PANTALLA OLED
+#include "ssd1306.h"
+#include "ssd1306_fonts.h"
+
 
 extern TIM_HandleTypeDef htim2;
 
 GameContext bomb;
 
+//         VARIABLES PARA INSTRUCCIONES EN LA PANTALLA
+uint32_t instructions_end_time = 0;
+uint8_t current_instruction_face = 255; // Texto de instrucciones que mostramos
+
+//        VARIABLES PARA LA ANIMACIÓN DE TIC TAC...
+static uint32_t last_anim_time = 0;
+static uint8_t anim_frame = 0;
+
+// Variable para detectar cambio de estado (Entry Action)
+static BombState last_known_state = STATE_IDLE;
+
+const char* FaceNames[] = {
+		"CAJA FUERTE",   // ID 0 (FACE_SAFE)
+		"DEFENSA AEREA",    // ID 1 (FACE_AIRDEF)
+		" SIMON DICE",    // ID 2 (FACE_SIMON)
+		"CODIGO MORSE",  // ID 3 (FACE_MORSE)
+		"   PILOTO"  // ID 4 (FACE_GYRO)
+};
+
+const char* GameInstructions[] = {
+		"\n   Gira los discos\n     cifrados",       // Instrucciones Caja Fuerte (0)
+		"\n   Intercepta los\n   cazas enemigos", // Instrucciones Def. Aerea (1)
+		"\n  Repite la secuencia\n    de colores", // Instrucciones Simon (2)
+		"\n   Decodifica la\n  palabra de 4 letras", // Instrucciones Morse (3)
+		"\n     Evita que la\n   nave se estrelle"   // Instrucciones Gyro (4)
+};
+
+//      FUNCIÓN CONTROL DE LA OLED:
+
+static void Refresh_OLED_Countdown(void) {
+
+    // CASO 1: Estamos mostrando instrucciones (los primeros 15s)
+    if (HAL_GetTick() < instructions_end_time) {
+        // No hacemos nada, la pantalla es estática y ya se dibujó al activar la cara.
+        return;
+    }
+
+    // CASO 2: Pasaron los 15s -> Animación TIC TAC
+    if (HAL_GetTick() - last_anim_time > 500) {
+        last_anim_time = HAL_GetTick();
+        anim_frame = !anim_frame; // Alternar 0/1
+
+        ssd1306_Fill(Black);
+        if (anim_frame) {
+            ssd1306_SetCursor(40, 67); // Centrado
+            ssd1306_WriteString("TIC TAC...", Font_16x26, White);
+        }
+        ssd1306_UpdateScreen();
+    }
+}
+
+//      FUNCIÓN INICIALIZACIÓN:
+
+
 void Game_Init(void) {
     bomb.currentState = STATE_IDLE;
-    bomb.timeRemaining = 240; // TIEMPO INICIAL
+    last_known_state = STATE_IDLE;
+
+    bomb.timeRemaining = 300; // TIEMPO INICIAL
     bomb.gamesLeft = TOTAL_FACES; //5
     bomb.mistakes = 0;
 
@@ -27,6 +87,13 @@ void Game_Init(void) {
     LCD_SetCursor(1, 0);
     LCD_Print(" BOMBA");
 
+    // OLED INICIAL
+        ssd1306_Init();
+        ssd1306_Fill(Black);
+        ssd1306_SetCursor(32, 70); //Centramos pantalla
+        ssd1306_WriteString("SISTEMA ARMADO!!", Font_11x18, White);
+        ssd1306_UpdateScreen();
+
     Sound_Init();
 }
 
@@ -37,87 +104,137 @@ void Game_ActivateFace(uint8_t face_id) {
 
         bomb.faceState[face_id] = 1; // 1 = ACTIVO (Jugando)
 
-        //meter efecto de sonido de activación (dramático)
+        //Disparamos temporizador de la oled:
+        //Las instrucciones se muestran 15 segundos
 
-        //meter efecto en pantalla OLED
+        instructions_end_time = HAL_GetTick() + 15000;
+        current_instruction_face = face_id;
+
+        //Pintamos las instrucciones de la cara en la OLED
+        ssd1306_Fill(Black);
+        //Título cara
+		ssd1306_SetCursor(20, 20);
+		ssd1306_WriteString((char*)FaceNames[face_id], Font_16x26, White);
+		//Línea separadora
+		for(int i=10; i<230; i++) ssd1306_DrawPixel(i, 50, White); // Línea en Y=50
+		//Instrucciones juego
+		ssd1306_SetCursor(10, 60);
+		ssd1306_WriteString((char*)GameInstructions[face_id], Font_11x18, White);
+		ssd1306_UpdateScreen();
+
     }
 }
+
+//       MÁQUINA DE ESTADOS
 
 void Game_Update(void) {
 
-    // --- GESTIÓN DEL TIEMPO Y SONIDOS ---
-    if (bomb.tick_flag == 1) {
-        bomb.tick_flag = 0;
+	// Variable local para saber si acabamos de entrar en un estado nuevo
+	uint8_t is_new_state = (bomb.currentState != last_known_state);
+	last_known_state = bomb.currentState; // Actualizamos para el siguiente ciclo
 
-        // Si el tiempo ya es 0, no hacemos nada más aquí (ya explotó)
-        if (bomb.currentState == STATE_EXPLOSION) return;
+	switch (bomb.currentState) {
 
-        // Actualizamos el reloj en el LCD
-        char time_str[16];
-        uint8_t m = bomb.timeRemaining / 60;
-        uint8_t s = bomb.timeRemaining % 60;
-        sprintf(time_str, "TIEMPO: %02d:%02d", m, s);
-        LCD_SetCursor(1, 0);
-        LCD_Print(time_str);
+	//ESTADO: BOMBA TODAVÍA NO ARMADA
+	        case STATE_IDLE:
 
+	        	//LE DAMOS AL BOTÓN DE INICIO (ARMAR BOMBA)
 
-        if (bomb.timeRemaining == 0) {
+	            if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET) {
 
-             bomb.currentState = STATE_EXPLOSION;
+	            	Sound_Buzzer_Arming();
+	            	Sound_Speaker_Startup();
 
-             LCD_Clear();
-             LCD_SetCursor(0, 2);
-             LCD_Print("!!! BOOM !!!");
-             LCD_SetCursor(1, 2);
-             LCD_Print("GAME OVER");
+	            	bomb.currentState = STATE_COUNTDOWN;
+	                HAL_TIM_Base_Start_IT(&htim2);
+	                LCD_Clear();
+	                LCD_SetCursor(0, 0);
+	                LCD_Print(" DETONATION IN: ");
 
-             Sound_PlayExplosion(); // ¡EL SONIDO POTENTE!
-        }
-        else if (bomb.timeRemaining <= 30) {
-            Sound_PlayPanic(); // Pánico
-        }
-        else {
-            Sound_PlayBeep(); // Normal
-        }
-    }
+	                // Pequeña espera para que no detecte el botón pulsado dos veces
+	                HAL_Delay(500);
+	            }
+	            break;
 
-    switch (bomb.currentState) {
-        case STATE_IDLE:
-            if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET) {
-                bomb.currentState = STATE_COUNTDOWN;
-                HAL_TIM_Base_Start_IT(&htim2);
-                LCD_Clear();
-                LCD_SetCursor(0, 0);
-                LCD_Print(" DETONATION IN: ");
-                Sound_PlayStart();
-                // Pequeña espera para que no detecte el botón pulsado dos veces
-                HAL_Delay(500);
-            }
-            break;
+	  // ESTADO: CUENTA ATRÁS (Juego Activo)
+	        case STATE_COUNTDOWN:
 
-        case STATE_COUNTDOWN:
+	        	//gestión del tick por segundo:
+	        	if (bomb.tick_flag == 1) {
+	        	        bomb.tick_flag = 0;
 
-        	// Escaneo de botones de activación de minijuego (PE7 - PE11)
+						// Actualizar LCD
+						char time_str[16];
+						uint8_t m = bomb.timeRemaining / 60;
+						uint8_t s = bomb.timeRemaining % 60;
+						sprintf(time_str, "TIEMPO: %02d:%02d", m, s);
+						LCD_SetCursor(1, 0);
+						LCD_Print(time_str);
 
-        		if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_7) == GPIO_PIN_RESET) Game_ActivateFace(FACE_SIMON);
-				else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_8) == GPIO_PIN_RESET) Game_ActivateFace(FACE_MORSE);
-				else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_9) == GPIO_PIN_RESET) Game_ActivateFace(FACE_SAFE);
-				else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_10) == GPIO_PIN_RESET) Game_ActivateFace(FACE_AIRDEF);
-				else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_11) == GPIO_PIN_RESET) Game_ActivateFace(FACE_GYRO);
+						// Chequear Fin de Tiempo
+						if (bomb.timeRemaining == 0) {
+							bomb.currentState = STATE_EXPLOSION;
+							break; // Salimos del switch para que en la próxima vuelta entre en EXPLOSION
+						}
+						// Sonidos según urgencia
+						if (bomb.timeRemaining <= 15) {
+							Sound_Buzzer_DoubleBeep();
+							Sound_Speaker_Siren();
+						} else if (bomb.timeRemaining <= 30) {
+							Sound_Buzzer_DoubleBeep();
+						} else {
+							Sound_Buzzer_Beep();
+						}
+					}
 
-            break;
+	        	// Refrescar OLED (Tic Tac o Instrucciones)
+					Refresh_OLED_Countdown();
 
-        case STATE_EXPLOSION:
-            //  poner LEDs parpadeando EN ROJO
+				// Escaneo de botones de activación de minijuego (PE7 - PE11)
 
-            break;
+					if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_7) == GPIO_PIN_RESET) Game_ActivateFace(FACE_SIMON);//FACE_SIMON
+					else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_8) == GPIO_PIN_RESET) Game_ActivateFace(FACE_MORSE);//FACE_MORSE
+					else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_9) == GPIO_PIN_RESET) Game_ActivateFace(FACE_SAFE);
+					else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_10) == GPIO_PIN_RESET) Game_ActivateFace(FACE_AIRDEF);
+					else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_11) == GPIO_PIN_RESET) Game_ActivateFace(FACE_GYRO);
 
-        case STATE_DEFUSED:
-            // poner LEDs parpadeando en verde y cancion victoria
-            break;
-    }
+	                   break;
+//ESTADO: EXPLOSIÓN (GAME OVER)
+		   case STATE_EXPLOSION:
+			   //  solo se ejecuta si es la primera vez que entramos (para no entrar en un bucle)
+			   if (is_new_state) {
+				   LCD_Clear();
+				   LCD_SetCursor(0, 2); LCD_Print("!!! BOOM !!!");
+				   LCD_SetCursor(1, 2); LCD_Print("GAME OVER");
+
+				   ssd1306_Fill(Black);
+				   ssd1306_SetCursor(80, 67);
+				   ssd1306_WriteString("BOOM!", Font_16x26, White);
+				   ssd1306_UpdateScreen();
+
+				   Sound_Speaker_Explosion();
+			    }
+			   	//Acción continua: parpadeo de leds rojos
+			   break;
+
+		   case STATE_DEFUSED:
+			   if (is_new_state) {
+				   LCD_Clear();
+				   LCD_SetCursor(0, 0); LCD_Print(" BOMBA DESACTIVADA");
+				   LCD_SetCursor(1, 0); LCD_Print("  BUEN TRABAJO!!");
+
+				   ssd1306_Fill(Black);
+				   ssd1306_SetCursor(0, 20);
+				   ssd1306_WriteString("VICTORIA!", Font_16x26, White);
+				   ssd1306_UpdateScreen();
+
+				   Sound_Speaker_WinTotal();
+			   }
+
+			   // Acción continua: LEDs verdes
+			   break;
+     }
 }
-
 
 void Game_TimerTick(void) {
     if (bomb.currentState == STATE_COUNTDOWN) {
@@ -134,20 +251,14 @@ void Game_TimerTick(void) {
 
 void Game_RegisterWin(uint8_t face_id) {
 
-	//    VICTORIA TOTAL
+	//    CASO: VICTORIA TOTAL
 	if (bomb.gamesLeft == 0) {
 	    bomb.currentState = STATE_DEFUSED;
-
-	    LCD_Clear();
-	    LCD_SetCursor(0, 0);
-	    LCD_Print(" BOMBA DESACTIVADA");
-	    LCD_SetCursor(1, 0);
-	    LCD_Print("  BUEN TRABAJO!!");
-	    Sound_PlayWin();
+	    return;
 	}
 
 
-	//                VICTORIA DE UNA CARA
+	//     CASO: VICTORIA DE UNA CARA
 
 
 	// Solo hacemos caso si estamos jugando y esa cara NO estaba ya resuelta
@@ -160,17 +271,29 @@ void Game_RegisterWin(uint8_t face_id) {
 			bomb.faceSolved[face_id] = 1;
 			//Desactivamos estado
 			bomb.faceState[face_id] = 0;
-
 			//  Restamos uno al contador global
 			bomb.gamesLeft--;
+
+			// Si al restar queda 0, ganamos todo
+			if (bomb.gamesLeft == 0) {
+				bomb.currentState = STATE_DEFUSED;
+				return;
+			}
 
 			// CÓDIGO DE LUCES
 			// LED_SetFaceColor(face_id, COLOR_GREEN);
 
 			// Sonido de cara resulta
-			Sound_PlayCaraResuelta();
+			Sound_Speaker_WinSmall();
 
 			//Mensaje de éxito en la OLED
+			instructions_end_time = 0;
+			// Mostrar OK en OLED 2 segundos
+			ssd1306_Fill(Black);
+			ssd1306_SetCursor(10, 20);
+			ssd1306_WriteString("MODULO OK!", Font_11x18, White);
+			ssd1306_UpdateScreen();
+			HAL_Delay(1500);
 		}
 }
 }
@@ -187,7 +310,7 @@ void Game_RegisterMistake(void) {
         }
 
         // Feedback sonoro de error
-        Sound_PlayError();
+        Sound_Buzzer_Beep();
     }
 }
 

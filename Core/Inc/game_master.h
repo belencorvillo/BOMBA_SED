@@ -14,7 +14,7 @@ typedef enum {
 //        IDENTIFICADORES DE LAS CARAS
 // Así tus compañeros saben qué número poner
 #define FACE_SAFE      0  // Cara Caja Fuerte
-#define FACE_AIRDEF     1  // Cara Caja Fuerte
+#define FACE_AIRDEF     1  // Cara Defensa Aérea
 #define FACE_SIMON     2  // Cara Simón
 #define FACE_MORSE     3  // Cara Morse
 #define FACE_GYRO      4  // Cara Giroscopio
