@@ -24,6 +24,7 @@
 #include "lcd_i2c.h"
 #include "game_master.h"
 #include "sounds.h"
+#include "simondice.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -66,7 +67,25 @@ static void MX_SPI1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
 
+    //ZONA CARA MAIN
+    if (GPIO_Pin == GPIO_PIN_0)
+    {
+        // OtroModulo_Handler(GPIO_Pin);
+    }
+    //ZONA SIMON DICE
+    else if (GPIO_Pin == GPIO_PIN_6 || GPIO_Pin == GPIO_PIN_7 || GPIO_Pin == GPIO_PIN_8)
+       {
+           SimonDice_Boton_Handler(GPIO_Pin);
+       }
+    // IR AÑADIENDO ZONAS
+    else
+    {
+        // Codigo_De_Otra_Cara
+    }
+}
 /* USER CODE END 0 */
 
 /**
@@ -104,29 +123,28 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
+  SimonDice_Init();
 
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  __HAL_RCC_GPIOB_CLK_ENABLE(); // Encender reloj Puerto B
+  __HAL_RCC_GPIOE_CLK_ENABLE(); // para los botones de activación de cara
 
+  //CONFIGURAMOS LCD
+  // Configuramos PB10 y PB11 con Pull-Up
+  GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_11;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;           // <--- LA CLAVE
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF4_I2C2;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-    __HAL_RCC_GPIOB_CLK_ENABLE(); // Encender reloj Puerto B
-    __HAL_RCC_GPIOE_CLK_ENABLE(); // para los botones de activación de cara
-
-    //CONFIGURAMOS LCD
-    // Configuramos PB10 y PB11 con Pull-Up
-    GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_11;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;           // <--- LA CLAVE
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF4_I2C2;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-    // Configuración Botones de Activación de las Caras (PE7 - PE11)
-      // Modo Input, con resistencia Pull-Up interna activada
-      GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11;
-      GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-      GPIO_InitStruct.Pull = GPIO_PULLUP; // <--- Importante: Conectar botón a GND
-      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-      HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+  // Configuración Botones de Activación de las Caras (PE7 - PE11)
+  // Modo Input, con resistencia Pull-Up interna activada
+  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP; // <--- Importante: Conectar botón a GND
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
 
 
@@ -137,7 +155,7 @@ int main(void)
 
   // Escribir mensaje
   LCD_SetCursor(0, 0); // Fila 0, Columna 0
- LCD_Print("PROYECTO MICROS");
+  LCD_Print("PROYECTO MICROS");
 
   LCD_SetCursor(1, 0); // Fila 1, Columna 0
   LCD_Print("BOMBA ACTIVA");
@@ -155,7 +173,9 @@ int main(void)
   while (1)
   {
 	  // Llamar al cerebro del juego continuamente
-	        Game_Update();
+	  Game_Update();
+	  SimonDice_Loop();
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -223,7 +243,7 @@ static void MX_I2C2_Init(void)
 
   /* USER CODE BEGIN I2C2_Init 1 */
 
-  /* USER COD END I2C2_Init 1 */
+  /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
   hi2c2.Init.ClockSpeed = 100000;
   hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
@@ -416,8 +436,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin
-                          |GPIO_PIN_1|GPIO_PIN_2|Audio_RST_Pin|GPIO_PIN_6
-                          |GPIO_PIN_7, GPIO_PIN_RESET);
+                          |SD_LED1_Pin|SD_LED2_Pin|SD_LED3_Pin|Audio_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : CS_I2C_SPI_Pin */
   GPIO_InitStruct.Pin = CS_I2C_SPI_Pin;
@@ -468,12 +487,16 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : SD_BTN3_Pin SD_BTN1_Pin SD_BTN2_Pin */
+  GPIO_InitStruct.Pin = SD_BTN3_Pin|SD_BTN1_Pin|SD_BTN2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LD4_Pin LD3_Pin LD5_Pin LD6_Pin
-                           PD1 PD2 Audio_RST_Pin PD6
-                           PD7 */
+                           SD_LED1_Pin SD_LED2_Pin SD_LED3_Pin Audio_RST_Pin */
   GPIO_InitStruct.Pin = LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin
-                          |GPIO_PIN_1|GPIO_PIN_2|Audio_RST_Pin|GPIO_PIN_6
-                          |GPIO_PIN_7;
+                          |SD_LED1_Pin|SD_LED2_Pin|SD_LED3_Pin|Audio_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
