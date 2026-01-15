@@ -70,21 +70,12 @@ static void MX_SPI1_Init(void);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 
-    //ZONA CARA MAIN
-    if (GPIO_Pin == GPIO_PIN_0)
-    {
-        // OtroModulo_Handler(GPIO_Pin);
-    }
     //ZONA SIMON DICE
-    else if (GPIO_Pin == GPIO_PIN_6 || GPIO_Pin == GPIO_PIN_7 || GPIO_Pin == GPIO_PIN_8)
+    if (GPIO_Pin == GPIO_PIN_6 || GPIO_Pin == GPIO_PIN_7 || GPIO_Pin == GPIO_PIN_8 ||
+            GPIO_Pin == GPIO_PIN_9 || GPIO_Pin == GPIO_PIN_10 || GPIO_Pin == GPIO_PIN_11)
        {
            SimonDice_Boton_Handler(GPIO_Pin);
        }
-    // IR AÑADIENDO ZONAS
-    else
-    {
-        // Codigo_De_Otra_Cara
-    }
 }
 /* USER CODE END 0 */
 
@@ -174,7 +165,10 @@ int main(void)
   {
 	  // Llamar al cerebro del juego continuamente
 	  Game_Update();
-	  SimonDice_Loop();
+
+	  if (bomb.faceState[FACE_SIMON] == 1) {
+		  SimonDice_Loop();
+	  }
 
     /* USER CODE END WHILE */
 

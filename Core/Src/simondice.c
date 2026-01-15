@@ -1,7 +1,8 @@
 #include "simondice.h"
+#include "game_master.h"
 #include <stdlib.h>
 
-static uint16_t LED_PINS[3] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2}; //GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5
+static uint16_t LED_PINS[3] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5};
 static uint8_t secuencia[8];
 static uint8_t nivelActual = 1;
 static uint8_t pasoUsuario = 0;
@@ -11,7 +12,7 @@ volatile int8_t botonPresionado = -1;
 volatile uint32_t ultimoTiempoRebote = 0;
 
 void parpadearLED(int indice, int duracion) {
-	if(indice < 0 || indice > 2) return;
+	if(indice < 0 || indice > 5) return;
     HAL_GPIO_WritePin(GPIOD, LED_PINS[indice], GPIO_PIN_SET);
     HAL_Delay(duracion);
     HAL_GPIO_WritePin(GPIOD, LED_PINS[indice], GPIO_PIN_RESET);
@@ -19,15 +20,15 @@ void parpadearLED(int indice, int duracion) {
 }
 
 void animacionPerder() {
-    for(int i=0; i<3; i++) HAL_GPIO_WritePin(GPIOD, LED_PINS[i], GPIO_PIN_SET);
+    for(int i=0; i<6; i++) HAL_GPIO_WritePin(GPIOD, LED_PINS[i], GPIO_PIN_SET);
     HAL_Delay(2000);
-    for(int i=0; i<3; i++) HAL_GPIO_WritePin(GPIOD, LED_PINS[i], GPIO_PIN_RESET);
+    for(int i=0; i<6; i++) HAL_GPIO_WritePin(GPIOD, LED_PINS[i], GPIO_PIN_RESET);
     HAL_Delay(1000);
 }
 
 void animacionGanar() {
     for(int j=0; j<3; j++) {
-        for(int i=0; i<3; i++) {
+        for(int i=0; i<6; i++) {
             HAL_GPIO_WritePin(GPIOD, LED_PINS[i], GPIO_PIN_SET);
             HAL_Delay(100);
             HAL_GPIO_WritePin(GPIOD, LED_PINS[i], GPIO_PIN_RESET);
@@ -38,7 +39,7 @@ void animacionGanar() {
 
 void generarSecuencia() {
     srand(HAL_GetTick());
-    for(int i=0; i<8; i++) secuencia[i] = rand() % 3;
+    for(int i=0; i<8; i++) secuencia[i] = rand() % 6;
 }
 
 void mostrarSecuencia() {
@@ -79,8 +80,8 @@ void SimonDice_Init(void) {
 
     //PARA PRUEBA CON 3 LEDS
     // 1. Configurar LEDs (PD0, PD1, PD2)
-    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2, GPIO_PIN_RESET);
-    GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2;
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
+    GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -88,19 +89,25 @@ void SimonDice_Init(void) {
 
     // 2. Configurar Botones (PD6, PD7, PD8)
     // CAMBIOS IMPORTANTES AQUÍ:
-    GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8;
+    GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11;
     GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING; // Detectar BAJADA (de 1 a 0)
     GPIO_InitStruct.Pull = GPIO_PULLUP;          // Mantener en 1 si no se pulsa
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-    // Activar interrupciones (PD6, PD7, PD8 están en la línea 9_5)
+    // 3. ACTIVAR INTERRUPCIONES
+    // Pines 6, 7, 8, 9 van por EXTI9_5
     HAL_NVIC_SetPriority(EXTI9_5_IRQn, 2, 0);
     HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+    // Pines 10, 11 van por EXTI15_10 (IMPORTANTE: No olvidar esta línea)
+    HAL_NVIC_SetPriority(EXTI15_10_IRQn, 2, 0);
+    HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
 
 // Gestión de intrrupciones
 void SimonDice_Boton_Handler(uint16_t GPIO_Pin)
 {
+	if (bomb.faceState[FACE_SIMON] == 0) return;
     // Solo entramos si ha pasado el tiempo de seguridad (Debounce)
     if ((HAL_GetTick() - ultimoTiempoRebote) > 200) {
 
@@ -118,6 +125,20 @@ void SimonDice_Boton_Handler(uint16_t GPIO_Pin)
             botonPresionado = 2;
             identificada = 1;
         }
+        else if(GPIO_Pin == GPIO_PIN_9) {
+            botonPresionado = 3;
+            identificada = 1;
+        }
+        else if(GPIO_Pin == GPIO_PIN_10) {
+            botonPresionado = 4;
+            identificada = 1;
+        }
+        else if(GPIO_Pin == GPIO_PIN_11) {
+            botonPresionado = 5+;
+            identificada = 1;
+        }
+
+
 
         if (identificada == 1) {
              ultimoTiempoRebote = HAL_GetTick();
@@ -127,6 +148,13 @@ void SimonDice_Boton_Handler(uint16_t GPIO_Pin)
 
 //JUEGO
 void SimonDice_Loop(void) {
+
+	// Si la cara NO está activa (0), no hacemos nada y salimos.
+	if (bomb.faceState[FACE_SIMON] == 0) {
+	    juegoActivo = 0;
+	    return;
+	}
+
     if (juegoActivo == 0) {
         generarSecuencia();
         nivelActual = 1;
@@ -144,6 +172,9 @@ void SimonDice_Loop(void) {
         if(btn == 0) pin_fisico = GPIO_PIN_6;
         else if(btn == 1) pin_fisico = GPIO_PIN_7;
         else if(btn == 2) pin_fisico = GPIO_PIN_8;
+        else if(btn == 3) pin_fisico = GPIO_PIN_9;
+        else if(btn == 4) pin_fisico = GPIO_PIN_10;
+        else if(btn == 5) pin_fisico = GPIO_PIN_11;
         uint32_t tiempoEspera = HAL_GetTick();
         while (HAL_GPIO_ReadPin(GPIOD, pin_fisico) == GPIO_PIN_RESET) {
         	if ((HAL_GetTick() - tiempoEspera) > 3000) break; // Salir si lleva 3s bloqueado
@@ -161,6 +192,7 @@ void SimonDice_Loop(void) {
                 pasoUsuario = 0;
                 if (nivelActual > 8) {
                     animacionGanar();
+                    Game_RegisterWin(FACE_SIMON);
                     juegoActivo = 0;
                 } else {
                     mostrarSecuencia();
@@ -168,6 +200,7 @@ void SimonDice_Loop(void) {
             }
         } else {
             animacionPerder();
+            Game_RegisterMistake();
             juegoActivo = 0;
         }
     }

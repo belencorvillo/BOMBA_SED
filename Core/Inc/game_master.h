@@ -43,4 +43,6 @@ void Game_RegisterMistake(void); // Llamar cuando se falla (quita tiempo)
 
 //Función para activar caras:
 void Game_ActivateFace(uint8_t face_id);
+
+extern GameContext bomb; // Hace que la variable 'bomb' sea visible para otros archivos
 #endif /* INC_GAME_MASTER_H_ */
