@@ -25,6 +25,8 @@
 #include "game_master.h"
 #include "sounds.h"
 #include "simondice.h"
+#include "airdef.h"
+#include "safe.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -114,7 +116,9 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-  SimonDice_Init();
+ // SimonDice_Init();
+  //AirDef_Init();
+  Safe_Init();
 
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   __HAL_RCC_GPIOB_CLK_ENABLE(); // Encender reloj Puerto B
@@ -140,7 +144,7 @@ int main(void)
 
 
 
-
+/*
   // Inicializar LCD
   LCD_Init();
 
@@ -154,7 +158,7 @@ int main(void)
 
   // Inicializar variables del juego
   Game_Init();
-
+*/
 
 
   /* USER CODE END 2 */
@@ -169,6 +173,8 @@ int main(void)
 	  if (bomb.faceState[FACE_SIMON] == 1) {
 		  SimonDice_Loop();
 	  }
+    AirDef_Loop();
+	  Safe_Loop();
 
     /* USER CODE END WHILE */
 

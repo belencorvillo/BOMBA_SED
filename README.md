@@ -33,6 +33,16 @@ Hardware: **STM32F407G-DISC1**
 
 | **BotonesSimonDice** | `PD6` hasta `PD11` | GPIO_Input | `1` = ON |
 
+| **LEDsRojosDefensaAérea** | `PB0` `PB1` `PB2` `PB4` `PB5` `PB7` | GPIO_Output | `1` = ON |
+
+| **LEDsVerdesDefensaAérea** | `PB12` `PB13` `PE12` hasta `PE15` | GPIO_Output | `1` = ON |
+
+| **InterruptoresDefensaAérea** | `PC0` hasta `PC5` | GPIO_Input | `1` = ON |
+
+| **LEDsCajaFuerte** | `PE2` `PE4` `PE5` | GPIO_Output | `1` = ON |
+
+| **PotenciómetrosCajaFuerte** | `PA1` `PA2` `PA3` | 
+
 | **BotonesActivaciónCaras** | `PE7` hasta `PE11` | GPIO_Input | `1` = ON |
 
 | **Pantalla TFT** |  `PA1 PA2 PA4 PA5 PA7` | GPIO_Output | `1` = ON |
@@ -49,7 +59,7 @@ Cread vuestros propios archivos .c y .h (ej: minijuego_simon.c, minijuego_cables
 
 Para decir si el minijuego ha sido ganado o fallado, usad las funciones que he preparado. Primero, poned esto arriba de vuestro archivo: #include "game_master.h" Cuando ganeis vuestro minijuego llamad a esta funcion: Game_RegisterWin(FACE_ID);
 
-IDs disponibles: FACE_SAFE (Caja fuerte / Potenciómetro) FACE_WIRES (Cables) FACE_SIMON (Simón Dice) FACE_MORSE (Morse) FACE_GYRO (Giroscopio / Acelerómetro)
+IDs disponibles: FACE_SAFE (Caja fuerte / Potenciómetro) FACE_AIRDEF (Interruptores) FACE_SIMON (Simón Dice) FACE_MORSE (Morse) FACE_GYRO (Giroscopio / Acelerómetro)
 
 Ejemplo: Game_RegisterWin(FACE_SIMON); -> La bomba pitará, marcará esa cara como OK y restará 1 al contador de módulos pendientes.
 
