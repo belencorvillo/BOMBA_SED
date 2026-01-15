@@ -108,12 +108,12 @@ void Safe_Init(void) {
 void Safe_Loop(void) {
 
     // --- FILTRO: Solo jugar si la cara está activa ---
-   /* if (bomb.faceState[FACE_SAFE] == 0) {
+    if (bomb.faceState[FACE_SAFE] == 0) {
     	// Apagar leds por si acaso
     	for(int i=0; i<3; i++) HAL_GPIO_WritePin(GPIOE, LED_PINS[i], GPIO_PIN_RESET);
     	return;
     }
-^*/
+
     // Si ya ganamos, LEDs fijos
     if (bomb.faceSolved[FACE_SAFE] == 1) {
         for(int i=0; i<3; i++) HAL_GPIO_WritePin(GPIOE, LED_PINS[i], GPIO_PIN_SET);

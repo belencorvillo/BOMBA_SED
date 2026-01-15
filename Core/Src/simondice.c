@@ -2,7 +2,7 @@
 #include "game_master.h"
 #include <stdlib.h>
 
-static uint16_t LED_PINS[3] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5};
+static uint16_t LED_PINS[6] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5};
 static uint8_t secuencia[8];
 static uint8_t nivelActual = 1;
 static uint8_t pasoUsuario = 0;
@@ -134,7 +134,7 @@ void SimonDice_Boton_Handler(uint16_t GPIO_Pin)
             identificada = 1;
         }
         else if(GPIO_Pin == GPIO_PIN_11) {
-            botonPresionado = 5+;
+            botonPresionado = 5;
             identificada = 1;
         }
 
