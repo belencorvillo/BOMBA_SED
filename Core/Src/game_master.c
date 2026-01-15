@@ -63,6 +63,19 @@ static void Refresh_OLED_Countdown(void) {
     }
 }
 
+//    FUNCIÓN PARA REINICIAR VARIABLES
+static void Reset_Game_Variables(void) {
+    bomb.timeRemaining = 300; // Reset Tiempo
+    bomb.gamesLeft = TOTAL_FACES; // Reset Juegos
+    bomb.mistakes = 0;
+
+    // Reset estado de caras
+    for(int i=0; i < TOTAL_FACES; i++) {
+        bomb.faceSolved[i] = 0;
+        bomb.faceState[i] = 0;
+    }
+}
+
 //      FUNCIÓN INICIALIZACIÓN:
 
 
@@ -159,6 +172,23 @@ void Game_Update(void) {
 	  // ESTADO: CUENTA ATRÁS (Juego Activo)
 	        case STATE_COUNTDOWN:
 
+	        	// Si sueltan la seta (PA0 == 0) a mitad de partida
+				if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET) {
+
+					HAL_TIM_Base_Stop_IT(&htim2); // Parar timer hardware
+
+					LCD_Clear();
+					LCD_SetCursor(0, 0); LCD_Print("PARTIDA");
+					LCD_SetCursor(1, 0); LCD_Print("CANCELADA");
+					HAL_Delay(1000);
+
+					Reset_Game_Variables(); // Limpiar datos
+					bomb.currentState = STATE_IDLE;
+					break; // Salimos del switch
+				}
+
+
+
 	        	//gestión del tick por segundo:
 	        	if (bomb.tick_flag == 1) {
 	        	        bomb.tick_flag = 0;
@@ -214,7 +244,13 @@ void Game_Update(void) {
 
 				   Sound_Speaker_Explosion();
 			    }
-			   	//Acción continua: parpadeo de leds rojos
+
+			   // TRANSICIÓN A IDLE
+			   // Si desenclavan la seta (PA0 == 0)
+			   if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET) {
+				   Reset_Game_Variables();
+				   bomb.currentState = STATE_IDLE;
+			   }
 			   break;
 
 		   case STATE_DEFUSED:
@@ -231,7 +267,12 @@ void Game_Update(void) {
 				   Sound_Speaker_WinTotal();
 			   }
 
-			   // Acción continua: LEDs verdes
+			   // TRANSICIÓN A IDLE
+			   // Si desenclavan la seta (PA0 == 0)
+			   if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET) {
+				   Reset_Game_Variables();
+				   bomb.currentState = STATE_IDLE;
+			   }
 			   break;
      }
 }
