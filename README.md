@@ -41,7 +41,7 @@ Hardware: **STM32F407G-DISC1**
 
 | **LEDsCajaFuerte** | `PE2` `PE4` `PE5` | GPIO_Output | `1` = ON |
 
-| **PotenciómetrosCajaFuerte** | `PA1` `PA2` `PA3` | 
+| **PotenciómetrosCajaFuerte** | `PA1` `PA2` `PA3` | GPIO_Analog | `0` to `4095` |
 
 | **BotonesActivaciónCaras** | `PE7` hasta `PE11` | GPIO_Input | `1` = ON |
 
