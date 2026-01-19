@@ -176,7 +176,7 @@ int main(void)
 	  // Llamar al cerebro del juego continuamente
 	  Game_Update();
 
-	  if (bomb.faceState[FACE_SIMON] == 1) {
+	  //if (bomb.faceState[FACE_SIMON] == 1) {
 		  SimonDice_Loop();
 	  }
       AirDef_Loop();

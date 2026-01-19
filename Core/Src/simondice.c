@@ -107,7 +107,7 @@ void SimonDice_Init(void) {
 // Gestión de intrrupciones
 void SimonDice_Boton_Handler(uint16_t GPIO_Pin)
 {
-	if (bomb.faceState[FACE_SIMON] == 0) return;
+	//if (bomb.faceState[FACE_SIMON] == 0) return;
     // Solo entramos si ha pasado el tiempo de seguridad (Debounce)
     if ((HAL_GetTick() - ultimoTiempoRebote) > 200) {
 
@@ -150,10 +150,10 @@ void SimonDice_Boton_Handler(uint16_t GPIO_Pin)
 void SimonDice_Loop(void) {
 
 	// Si la cara NO está activa (0), no hacemos nada y salimos.
-	if (bomb.faceState[FACE_SIMON] == 0) {
-	    juegoActivo = 0;
-	    return;
-	}
+//	if (bomb.faceState[FACE_SIMON] == 0) {
+//	    juegoActivo = 0;
+//	    return;
+//	}
 
     if (juegoActivo == 0) {
         generarSecuencia();
