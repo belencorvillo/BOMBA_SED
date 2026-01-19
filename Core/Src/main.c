@@ -28,6 +28,7 @@
 #include "airdef.h"
 #include "safe.h"
 #include "morse.h"
+#include "ili9341.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,7 +57,7 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN PV */
-
+extern GameContext bomb; // Importamos la variable global de la bomba para leer los estados
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -120,7 +121,7 @@ int main(void)
   MX_SPI1_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-
+  ILI9341_Init();
   SimonDice_Init();
   AirDef_Init();
   Safe_Init();
@@ -150,7 +151,7 @@ int main(void)
 
 
 
-/*
+
   // Inicializar LCD
   LCD_Init();
 
@@ -164,7 +165,7 @@ int main(void)
 
   // Inicializar variables del juego
   Game_Init();
-*/
+
 
 
   /* USER CODE END 2 */
@@ -176,19 +177,25 @@ int main(void)
 	  // Llamar al cerebro del juego continuamente
 	  Game_Update();
 
-	  //if (bomb.faceState[FACE_SIMON] == 1) {
-		  SimonDice_Loop();
-	  }
-      AirDef_Loop();
-	  Safe_Loop();
-	  Morse_Loop();
+	    if (bomb.faceState[FACE_SIMON] == 1) {
+			SimonDice_Loop();
+		}
+		else if (bomb.faceState[FACE_AIRDEF] == 1) {
+			AirDef_Loop();
+		}
+		else if (bomb.faceState[FACE_SAFE] == 1) {
+			Safe_Loop();
+		}
+		else if (bomb.faceState[FACE_MORSE] == 1) {
+			Morse_Loop();
+		}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
-}
 
+  /* USER CODE END 3 */
+ }
+}
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -378,9 +385,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 41999;
+  htim2.Init.Prescaler = 8399;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 3999;
+  htim2.Init.Period = 15999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -482,6 +489,30 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+
+  //CONFIGURACIÓN DE LOS PINES PARA LA PANTALLA ILI9341
+
+  // Ponemos CS (PA8) a nivel ALTO (Desactivado) inicialmente para que no reciba ruido
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+
+    // Ponemos RES (PC8) a ALTO y DC (PC9) a BAJO por defecto
+
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+
+    // Configurar PA8 (CS) como SALIDA
+      GPIO_InitStruct.Pin = GPIO_PIN_8;
+      GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push Pull
+      GPIO_InitStruct.Pull = GPIO_NOPULL;
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH; // Velocidad alta para SPI
+      HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+      // Configurar PC8 (RES) y PC9 (DC) como SALIDA
+      GPIO_InitStruct.Pin = GPIO_PIN_8 | GPIO_PIN_9;
+      GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+      GPIO_InitStruct.Pull = GPIO_NOPULL;
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+      HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_RESET);

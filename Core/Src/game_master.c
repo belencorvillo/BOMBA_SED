@@ -1,11 +1,11 @@
+#include <fonts.h>
+#include <ili9341.h>
 #include "game_master.h"
 #include "lcd_i2c.h"
 #include "sounds.h"
 #include <stdio.h>
 
 //INCLUDES PARA LA PANTALLA OLED
-#include "ssd1306.h"
-#include "ssd1306_fonts.h"
 
 
 extern TIM_HandleTypeDef htim2;
@@ -28,20 +28,20 @@ const char* FaceNames[] = {
 		"DEFENSA AEREA",    // ID 1 (FACE_AIRDEF)
 		" SIMON DICE",    // ID 2 (FACE_SIMON)
 		"CODIGO MORSE",  // ID 3 (FACE_MORSE)
-		"   PILOTO"  // ID 4 (FACE_GYRO)
+		"  PILOTO"  // ID 4 (FACE_GYRO)
 };
 
 const char* GameInstructions[] = {
-		"\n   Gira los discos\n     cifrados",       // Instrucciones Caja Fuerte (0)
-		"\n   Intercepta los\n   cazas enemigos", // Instrucciones Def. Aerea (1)
-		"\n  Repite la secuencia\n    de colores", // Instrucciones Simon (2)
-		"\n   Decodifica la\n  palabra de 4 letras", // Instrucciones Morse (3)
-		"\n     Evita que la\n   nave se estrelle"   // Instrucciones Gyro (4)
+		" Gira los discos cifrados",       // Instrucciones Caja Fuerte (0)
+		"      Intercepta los cazas               enemigos", // Instrucciones Def. Aerea (1)
+		"    Repite la secuencia de                colores", // Instrucciones Simon (2)
+		"   Decodifica la  palabra de             4 letras", // Instrucciones Morse (3)
+		"      Evita que la nave se               estrelle"   // Instrucciones Gyro (4)
 };
 
 //      FUNCIÓN CONTROL DE LA OLED:
 
-static void Refresh_OLED_Countdown(void) {
+static void Refresh_TFT_Countdown(void) {
 
     // CASO 1: Estamos mostrando instrucciones (los primeros 15s)
     if (HAL_GetTick() < instructions_end_time) {
@@ -54,12 +54,13 @@ static void Refresh_OLED_Countdown(void) {
         last_anim_time = HAL_GetTick();
         anim_frame = !anim_frame; // Alternar 0/1
 
-        ssd1306_Fill(Black);
+
         if (anim_frame) {
-            ssd1306_SetCursor(40, 67); // Centrado
-            ssd1306_WriteString("TIC TAC...", Font_16x26, White);
+        	DrawCenteredText(100, "TIC TAC...", Font_16x26, ILI9341_WHITE, ILI9341_BLACK);
+        } else {
+        	ILI9341_FillScreen(ILI9341_BLACK);
         }
-        ssd1306_UpdateScreen();
+
     }
 }
 
@@ -85,14 +86,9 @@ void Game_Init(void) {
 
     bomb.timeRemaining = 300; // TIEMPO INICIAL
     bomb.gamesLeft = TOTAL_FACES; //5
-    bomb.mistakes = 0;
+    Reset_Game_Variables();
 
-    // Iniciamos el array de caras
-        for(int i=0; i < TOTAL_FACES; i++) {
-            bomb.faceSolved[i] = 0;
-            bomb.faceState[i] = 0;
-        }
-
+    //Inicializar pantalla LCD I2C
     LCD_Init();
     LCD_Clear();
     LCD_SetCursor(0, 0);
@@ -100,12 +96,12 @@ void Game_Init(void) {
     LCD_SetCursor(1, 0);
     LCD_Print(" BOMBA");
 
-    // OLED INICIAL
-        ssd1306_Init();
-        ssd1306_Fill(Black);
-        ssd1306_SetCursor(32, 70); //Centramos pantalla
-        ssd1306_WriteString("SISTEMA ARMADO!!", Font_11x18, White);
-        ssd1306_UpdateScreen();
+    //Inicializar pantalla TFT ILI9341
+    ILI9341_Init();
+	ILI9341_FillScreen(ILI9341_BLACK);
+	ILI9341_DrawLine(10, 10, 310, 10, ILI9341_RED);
+	ILI9341_DrawLine(10, 230, 310, 230, ILI9341_RED);
+	DrawCenteredText(100, "SISTEMA ARMADO!!", Font_16x26, ILI9341_RED, ILI9341_BLACK);
 
     Sound_Init();
 }
@@ -117,23 +113,24 @@ void Game_ActivateFace(uint8_t face_id) {
 
         bomb.faceState[face_id] = 1; // 1 = ACTIVO (Jugando)
 
-        //Disparamos temporizador de la oled:
+        //Disparamos temporizador de la TFT:
         //Las instrucciones se muestran 15 segundos
 
         instructions_end_time = HAL_GetTick() + 15000;
         current_instruction_face = face_id;
 
-        //Pintamos las instrucciones de la cara en la OLED
-        ssd1306_Fill(Black);
+        //Pintamos las instrucciones de la cara en la TFT
+        ILI9341_FillScreen(ILI9341_BLACK);
         //Título cara
-		ssd1306_SetCursor(20, 20);
-		ssd1306_WriteString((char*)FaceNames[face_id], Font_16x26, White);
+        ILI9341_FillRectangle(0, 0, ILI9341_WIDTH, 40, ILI9341_BLUE);
+		DrawCenteredText(10, FaceNames[face_id], Font_16x26, ILI9341_WHITE, ILI9341_BLUE);
 		//Línea separadora
-		for(int i=10; i<230; i++) ssd1306_DrawPixel(i, 50, White); // Línea en Y=50
+		ILI9341_DrawLine(0, 45, 320, 45, ILI9341_WHITE);
 		//Instrucciones juego
-		ssd1306_SetCursor(10, 60);
-		ssd1306_WriteString((char*)GameInstructions[face_id], Font_11x18, White);
-		ssd1306_UpdateScreen();
+		DrawCenteredText(90, "INSTRUCCIONES:", Font_11x18, ILI9341_YELLOW, ILI9341_BLACK);
+		DrawCenteredText(120, GameInstructions[face_id], Font_11x18, ILI9341_WHITE, ILI9341_BLACK);
+		// Barra de tiempo visual (Decorativa)
+		ILI9341_FillRectangle(20, 200, 280, 10, ILI9341_DARKGREY);
 
     }
 }
@@ -164,6 +161,9 @@ void Game_Update(void) {
 	                LCD_SetCursor(0, 0);
 	                LCD_Print(" DETONATION IN: ");
 
+	                // Limpiamos la TFT para empezar la cuenta
+					ILI9341_FillScreen(ILI9341_BLACK);
+
 	                // Pequeña espera para que no detecte el botón pulsado dos veces
 	                HAL_Delay(500);
 	            }
@@ -171,7 +171,7 @@ void Game_Update(void) {
 
 	  // ESTADO: CUENTA ATRÁS (Juego Activo)
 	        case STATE_COUNTDOWN:
-
+/*
 	        	// Si sueltan la seta (PA0 == 0) a mitad de partida
 				if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET) {
 
@@ -180,12 +180,16 @@ void Game_Update(void) {
 					LCD_Clear();
 					LCD_SetCursor(0, 0); LCD_Print("PARTIDA");
 					LCD_SetCursor(1, 0); LCD_Print("CANCELADA");
-					HAL_Delay(1000);
 
+					ILI9341_FillScreen(ILI9341_BLUE);
+					DrawCenteredText(110, "CANCELADO", Font_16x26, ILI9341_WHITE, ILI9341_BLUE);
+
+					HAL_Delay(1000);
 					Reset_Game_Variables(); // Limpiar datos
 					bomb.currentState = STATE_IDLE;
 					break; // Salimos del switch
 				}
+*/
 
 
 
@@ -217,8 +221,8 @@ void Game_Update(void) {
 						}
 					}
 
-	        	// Refrescar OLED (Tic Tac o Instrucciones)
-					Refresh_OLED_Countdown();
+	        	// Refrescar TFT (Tic Tac o Instrucciones)
+					Refresh_TFT_Countdown();
 
 				// Escaneo de botones de activación de minijuego (PE7 - PE11)
 
@@ -237,10 +241,10 @@ void Game_Update(void) {
 				   LCD_SetCursor(0, 2); LCD_Print("!!! BOOM !!!");
 				   LCD_SetCursor(1, 2); LCD_Print("GAME OVER");
 
-				   ssd1306_Fill(Black);
-				   ssd1306_SetCursor(80, 67);
-				   ssd1306_WriteString("BOOM!", Font_16x26, White);
-				   ssd1306_UpdateScreen();
+				   // Pantalla ROJA completa
+				   ILI9341_FillScreen(ILI9341_RED);
+				   DrawCenteredText(100, "BOOM!", Font_16x26, ILI9341_WHITE, ILI9341_RED);
+				   DrawCenteredText(140, "GAME OVER", Font_11x18, ILI9341_WHITE, ILI9341_RED);
 
 				   Sound_Speaker_Explosion();
 			    }
@@ -250,6 +254,7 @@ void Game_Update(void) {
 			   if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET) {
 				   Reset_Game_Variables();
 				   bomb.currentState = STATE_IDLE;
+				   ILI9341_FillScreen(ILI9341_BLACK); // Limpiar rojo
 			   }
 			   break;
 
@@ -259,10 +264,10 @@ void Game_Update(void) {
 				   LCD_SetCursor(0, 0); LCD_Print(" BOMBA DESACTIVADA");
 				   LCD_SetCursor(1, 0); LCD_Print("  BUEN TRABAJO!!");
 
-				   ssd1306_Fill(Black);
-				   ssd1306_SetCursor(0, 20);
-				   ssd1306_WriteString("VICTORIA!", Font_16x26, White);
-				   ssd1306_UpdateScreen();
+				   // Pantalla VERDE completa
+				   ILI9341_FillScreen(ILI9341_GREEN);
+				   DrawCenteredText(90, "VICTORIA!", Font_16x26, ILI9341_BLACK, ILI9341_GREEN);
+				   DrawCenteredText(130, "BOMBA DESACTIVADA", Font_11x18, ILI9341_BLACK, ILI9341_GREEN);
 
 				   Sound_Speaker_WinTotal();
 			   }
@@ -272,6 +277,7 @@ void Game_Update(void) {
 			   if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET) {
 				   Reset_Game_Variables();
 				   bomb.currentState = STATE_IDLE;
+				   ILI9341_FillScreen(ILI9341_BLACK); // Limpiar verde
 			   }
 			   break;
      }
@@ -329,12 +335,12 @@ void Game_RegisterWin(uint8_t face_id) {
 
 			//Mensaje de éxito en la OLED
 			instructions_end_time = 0;
-			// Mostrar OK en OLED 2 segundos
-			ssd1306_Fill(Black);
-			ssd1306_SetCursor(10, 20);
-			ssd1306_WriteString("MODULO OK!", Font_11x18, White);
-			ssd1306_UpdateScreen();
+			// Mostrar OK en TFT
+			ILI9341_FillScreen(ILI9341_BLACK);
+			ILI9341_FillRectangle(0, 80, 320, 80, ILI9341_GREEN); // Banda verde
+			DrawCenteredText(110, "MODULO OK!", Font_16x26, ILI9341_BLACK, ILI9341_GREEN);
 			HAL_Delay(1500);
+			ILI9341_FillScreen(ILI9341_BLACK);
 		}
 }
 }
@@ -350,8 +356,11 @@ void Game_RegisterMistake(void) {
             bomb.timeRemaining = 0; // Si queda poco, explota ya
         }
 
-        // Feedback sonoro de error
+        // Feedback sonoro y visual de error
+        ILI9341_FillRectangle(0, 0, 320, 20, ILI9341_RED);
         Sound_Buzzer_Beep();
+        HAL_Delay(200);
+		ILI9341_FillRectangle(0, 0, 320, 20, ILI9341_BLACK);
     }
 }
 

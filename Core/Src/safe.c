@@ -8,6 +8,7 @@
 #include "safe.h"
 #include "game_master.h"
 #include <math.h> // Para la función abs()
+#include <stdlib.h>
 
 // ==========================================
 // CONFIGURACIÓN DE LA COMBINACIÓN SECRETA
