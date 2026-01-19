@@ -45,11 +45,11 @@ Hardware: **STM32F407G-DISC1**
 
 | **BotonesActivaciónCaras** | `PE7` hasta `PE11` | GPIO_Input | `1` = ON |
 
-| **Pantalla TFT** |  `PA1 PA2 PA4 PA5 PA7` | GPIO_Output | `1` = ON |
-
-| **Pantalla TFT** |  `PA5 PA7` | SPI1_SCK, SPI1_MOSI | - |
-
 | **Altavoz** |  `PC6` | GPIO_Output / TIM3 | `1` = ON |
+
+| **Pantalla TFT** |  CS => PA8, RESET=>PC8, DC/RS => PC9, MOSI=> PA7, SCK => PA5, VCC => 3.3V, GND => GND, LED => 3.3V |
+
+
 
 
 
