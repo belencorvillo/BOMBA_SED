@@ -39,6 +39,10 @@ Hardware: **STM32F407G-DISC1**
 
 | **InterruptoresDefensaAérea** | `PC0` hasta `PC5` | GPIO_Input | `1` = ON |
 
+| **PulsadorMorse** | `PB14` | GPIO_Input | `1` = ON |
+
+| **LEDsMorse** | `PE0` `PE1` `PE6` | GPIO_Output | `1` = ON |
+
 | **LEDsCajaFuerte** | `PE2` `PE4` `PE5` | GPIO_Output | `1` = ON |
 
 | **PotenciómetrosCajaFuerte** | `PA1` `PA2` `PA3` | GPIO_Analog | `0` to `4095` |

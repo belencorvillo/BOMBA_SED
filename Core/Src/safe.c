@@ -14,7 +14,7 @@
 // ==========================================
 // El ADC lee de 0 a 4095.
 // Elige 3 números entre ese rango para tu clave.
-const uint32_t COMBINACION[3] = { 3500, 1200, 500 };
+const uint32_t COMBINACION[3] = { 2500, 1200, 500 };
 
 // ==========================================
 // DEFINICIÓN DE PINES
@@ -108,11 +108,11 @@ void Safe_Init(void) {
 void Safe_Loop(void) {
 
     // --- FILTRO: Solo jugar si la cara está activa ---
-    if (bomb.faceState[FACE_SAFE] == 0) {
+	/*if (bomb.faceState[FACE_SAFE] == 0) {
     	// Apagar leds por si acaso
     	for(int i=0; i<3; i++) HAL_GPIO_WritePin(GPIOE, LED_PINS[i], GPIO_PIN_RESET);
     	return;
-    }
+    }*/
 
     // Si ya ganamos, LEDs fijos
     if (bomb.faceSolved[FACE_SAFE] == 1) {

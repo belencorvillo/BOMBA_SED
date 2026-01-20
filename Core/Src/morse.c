@@ -31,7 +31,7 @@ const char* DICCIONARIO[] = { "SOS", "BOMBA", "HOLA", "TUNEL", "CLAVE" };
 // Usamos PB14 para evitar conflicto con el sensor MEMS en PE3
 #define PIN_BTN   GPIO_PIN_14 // PB14
 #define PUERTO_BTN GPIOB     // ¡Cuidado, puerto distinto!
-
+uint8_t debug_estado_boton = 5;
 // ESTADOS DEL MÓDULO (Para no usar delays)
 typedef enum {
     MORSE_IDLE,         // Esperando input
@@ -46,8 +46,9 @@ static MorseState estado_actual = MORSE_IDLE;
 // Variables de Juego
 static char palabra_objetivo[10];
 static uint8_t indice_letra_actual = 0;
-static char buffer_morse[6];
-static uint8_t indice_buffer = 0;
+char buffer_morse[6];
+char debug_letra = ' ';     // Para ver qué letra ha traducido
+uint8_t indice_buffer = 0;
 
 // Variables de Tiempo (Cronómetros)
 static uint32_t tiempo_inicio_pulsacion = 0;
@@ -124,11 +125,12 @@ void Morse_Init(void) {
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
         HAL_GPIO_Init(PUERTO_LEDS, &GPIO_InitStruct); // Usa GPIOE
 
-    SetRGB(0,0,0);
+        //HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, GPIO_PIN_SET);
+        SetRGB(0,0,0);
 
     // Elegir palabra
     srand(HAL_GetTick());
-    strcpy(palabra_objetivo, DICCIONARIO[rand() % NUM_PALABRAS]);
+    strcpy(palabra_objetivo, DICCIONARIO[0]);//rand() % NUM_PALABRAS
 
     estado_actual = MORSE_IDLE;
     indice_letra_actual = 0;
@@ -138,11 +140,11 @@ void Morse_Init(void) {
 
 void Morse_Loop(void) {
     // Si la cara no está activa, salir
-    if (bomb.faceState[FACE_MORSE] == 0) {
+   /* if (bomb.faceState[FACE_MORSE] == 0) {
         SetRGB(0,0,0);
         return;
     }
-
+*/
     uint32_t ahora = HAL_GetTick();
 
     // ---------------------------------------------------------
@@ -156,44 +158,48 @@ void Morse_Loop(void) {
         return;
 
     case MORSE_ANIM_FAIL:
-        // Mostrar ROJO durante 1 segundo
-        SetRGB(1, 0, 0);
-        if (ahora - timer_animacion > 1000) {
-            SetRGB(0, 0, 0);
-            estado_actual = MORSE_IDLE; // Volver a jugar
-            // Reiniciar progreso
-            indice_letra_actual = 0;
-            indice_buffer = 0;
-            memset(buffer_morse, 0, 6);
-        }
-        return; // Bloqueamos input mientras mostramos el error
+    	// Cambia de estado cada 50ms (muy rápido)
+    	        if (ahora - timer_animacion > 50) {
+    	            timer_animacion = ahora;
+    	            contador_parpadeos++;
+    	            SetRGB((contador_parpadeos % 2), 0, 0); // Rojo parpadeando
+
+    	            // Dura 20 cambios (aprox 1 segundo total)
+    	            if (contador_parpadeos >= 20) {
+    	                SetRGB(0, 0, 0);
+    	                estado_actual = MORSE_IDLE;
+    	                // Resetear variables del juego
+    	                indice_letra_actual = 0;
+    	                indice_buffer = 0;
+    	                memset(buffer_morse, 0, 6);
+    	            }
+    	        }
+    	        return; // Bloqueamos input mientras mostramos el error
 
     case MORSE_ANIM_WIN:
-        // Parpadeo VERDE 3 veces (cada 100ms cambia)
-        if (ahora - timer_animacion > 100) {
-            timer_animacion = ahora;
-            contador_parpadeos++;
+    	// Cambia cada 100ms
+    	        if (ahora - timer_animacion > 100) {
+    	            timer_animacion = ahora;
+    	            contador_parpadeos++;
 
-            // Alternar Verde / Apagado
-            if (contador_parpadeos % 2 != 0) SetRGB(0, 1, 0);
-            else SetRGB(0, 0, 0);
+    	            // Alterna entre VERDE y AZUL (muy chulo con RGB)
+    	            if (contador_parpadeos % 2 != 0) SetRGB(0, 1, 0); // Verde
+    	            else SetRGB(0, 0, 1); // Azul
 
-            if (contador_parpadeos >= 6) { // 3 encendidos y 3 apagados
-                estado_actual = MORSE_IDLE;
-                // Pasar a siguiente letra
-                indice_letra_actual++;
-                indice_buffer = 0;
-                memset(buffer_morse, 0, 6);
-                tiempo_ultimo_evento = ahora; // Resetear timeout
+    	            if (contador_parpadeos >= 8) { // 8 cambios
+    	                estado_actual = MORSE_IDLE;
+    	                indice_letra_actual++;
+    	                indice_buffer = 0;
+    	                memset(buffer_morse, 0, 6);
+    	                tiempo_ultimo_evento = ahora;
 
-                // ¿Ganamos el juego entero?
-                if (indice_letra_actual >= strlen(palabra_objetivo)) {
-                     estado_actual = MORSE_SOLVED;
-                     Game_RegisterWin(FACE_MORSE);
-                }
-            }
-        }
-        return; // Bloqueamos input durante animación
+    	                if (indice_letra_actual >= strlen(palabra_objetivo)) {
+    	                     estado_actual = MORSE_SOLVED;
+    	                     Game_RegisterWin(FACE_MORSE);
+    	                }
+    	            }
+    	        }
+    	        return; // Bloqueamos input durante animación
 
     case MORSE_IDLE:
     case MORSE_INPUT:
@@ -205,7 +211,8 @@ void Morse_Loop(void) {
     // LÓGICA DE LECTURA (Solo si estamos en IDLE o INPUT)
     // ---------------------------------------------------------
 
-    uint8_t btn_now = HAL_GPIO_ReadPin(PUERTO_LEDS, PIN_BTN);
+    uint8_t btn_now = HAL_GPIO_ReadPin(PUERTO_BTN, PIN_BTN);
+    debug_estado_boton = btn_now;
 
     // 1. AL PULSAR (Bajada)
     if (btn_prev == 1 && btn_now == 0) {
@@ -221,26 +228,34 @@ void Morse_Loop(void) {
 
         uint32_t duracion = ahora - tiempo_inicio_pulsacion;
         tiempo_ultimo_evento = ahora;
-
-        if (indice_buffer < 5) {
-            if (duracion < TIEMPO_PUNTO_MAX) buffer_morse[indice_buffer++] = '.';
-            else buffer_morse[indice_buffer++] = '-';
+        //  FILTRO ANTI-REBOTE
+        // Si la pulsación duró menos de 50ms, es ruido eléctrico. Ignorar.
+        if (duracion > 50) {
+        	if (indice_buffer < 5) {
+        		if (duracion < TIEMPO_PUNTO_MAX) buffer_morse[indice_buffer++] = '.';
+        		else buffer_morse[indice_buffer++] = '-';
+        		//  SEGURIDAD DE STRING
+        		// Forzamos el cierre de la cadena siempre
+        		 buffer_morse[indice_buffer] = '\0';
         }
+        }
+
         estado_actual = MORSE_IDLE;
     }
 
     // 3. SILENCIO LARGO (Procesar letra)
     // Si lleva suelto más de X tiempo y tenemos algo en el buffer
     else if (btn_now == 1 && (ahora - tiempo_ultimo_evento > TIEMPO_SILENCIO) && indice_buffer > 0) {
-
+    	SetRGB(0, 1, 0);
         char letra = MorseToChar(buffer_morse);
+        debug_letra = letra;
 
         if (letra == palabra_objetivo[indice_letra_actual]) {
             // ACIERTO -> Iniciar animación WIN
             estado_actual = MORSE_ANIM_WIN;
             timer_animacion = ahora;
             contador_parpadeos = 0;
-            SetRGB(0, 0, 0);
+            //SetRGB(0, 0, 0);
         } else {
             // FALLO -> Iniciar animación FAIL
             estado_actual = MORSE_ANIM_FAIL;
