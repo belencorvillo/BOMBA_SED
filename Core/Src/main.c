@@ -162,7 +162,7 @@ int main(void)
   LCD_SetCursor(1, 0); // Fila 1, Columna 0
   LCD_Print("BOMBA ACTIVA");
 
-
+*/
   // Inicializar variables del juego
   Game_Init();
 
@@ -177,18 +177,13 @@ int main(void)
 	  // Llamar al cerebro del juego continuamente
 	  Game_Update();
 
-	    if (bomb.faceState[FACE_SIMON] == 1) {
-			SimonDice_Loop();
-		}
-		else if (bomb.faceState[FACE_AIRDEF] == 1) {
-			AirDef_Loop();
-		}
-		else if (bomb.faceState[FACE_SAFE] == 1) {
-			Safe_Loop();
-		}
-		else if (bomb.faceState[FACE_MORSE] == 1) {
-			Morse_Loop();
-		}
+	  if (bomb.faceState[FACE_SIMON] == 1) {SimonDice_Loop();}
+	  else if (bomb.faceState[FACE_AIRDEF] == 1){AirDef_Loop();}
+	  else if (bomb.faceState[FACE_SAFE] == 1){Safe_Loop();}
+	  else if (bomb.faceState[FACE_MORSE] == 1){Morse_Loop();}
+
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

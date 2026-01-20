@@ -20,10 +20,12 @@ void parpadearLED(int indice, int duracion) {
 }
 
 void animacionPerder() {
+
     for(int i=0; i<6; i++) HAL_GPIO_WritePin(GPIOD, LED_PINS[i], GPIO_PIN_SET);
     HAL_Delay(2000);
     for(int i=0; i<6; i++) HAL_GPIO_WritePin(GPIOD, LED_PINS[i], GPIO_PIN_RESET);
     HAL_Delay(1000);
+
 }
 
 void animacionGanar() {
@@ -56,30 +58,7 @@ void SimonDice_Init(void) {
 
     __HAL_RCC_GPIOD_CLK_ENABLE();
 
-    /*
-    // Configurar LEDs (PD0-PD5)
-    HAL_GPIO_WritePin(GPIOD, 0x3F, GPIO_PIN_RESET);
-    GPIO_InitStruct.Pin = 0x3F; // Pines 0 a 5
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
-    // Configurar Botones (PD6-PD11) con Interrupción
-    GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
-    // Activar interrupciones en NVIC
-    HAL_NVIC_SetPriority(EXTI9_5_IRQn, 2, 0);
-    HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
-    HAL_NVIC_SetPriority(EXTI15_10_IRQn, 2, 0);
-    HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-    */
-
-    //PARA PRUEBA CON 3 LEDS
-    // 1. Configurar LEDs (PD0, PD1, PD2)
+    // Configurar LEDs (PD0 a PD5)
     HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -87,8 +66,7 @@ void SimonDice_Init(void) {
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-    // 2. Configurar Botones (PD6, PD7, PD8)
-    // CAMBIOS IMPORTANTES AQUÍ:
+    // Configurar Botones (PD6 a PD11)
     GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11;
     GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING; // Detectar BAJADA (de 1 a 0)
     GPIO_InitStruct.Pull = GPIO_PULLUP;          // Mantener en 1 si no se pulsa
@@ -99,7 +77,7 @@ void SimonDice_Init(void) {
     HAL_NVIC_SetPriority(EXTI9_5_IRQn, 2, 0);
     HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
-    // Pines 10, 11 van por EXTI15_10 (IMPORTANTE: No olvidar esta línea)
+    // Pines 10, 11 van por EXTI15_10
     HAL_NVIC_SetPriority(EXTI15_10_IRQn, 2, 0);
     HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
@@ -107,7 +85,7 @@ void SimonDice_Init(void) {
 // Gestión de intrrupciones
 void SimonDice_Boton_Handler(uint16_t GPIO_Pin)
 {
-	//if (bomb.faceState[FACE_SIMON] == 0) return;
+	if (bomb.faceState[FACE_SIMON] == 0) return;
     // Solo entramos si ha pasado el tiempo de seguridad (Debounce)
     if ((HAL_GetTick() - ultimoTiempoRebote) > 200) {
 
@@ -150,10 +128,10 @@ void SimonDice_Boton_Handler(uint16_t GPIO_Pin)
 void SimonDice_Loop(void) {
 
 	// Si la cara NO está activa (0), no hacemos nada y salimos.
-//	if (bomb.faceState[FACE_SIMON] == 0) {
-//	    juegoActivo = 0;
-//	    return;
-//	}
+	if (bomb.faceState[FACE_SIMON] == 0) {
+	    juegoActivo = 0;
+	    return;
+	}
 
     if (juegoActivo == 0) {
         generarSecuencia();
