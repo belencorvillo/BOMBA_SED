@@ -140,11 +140,11 @@ void Morse_Init(void) {
 
 void Morse_Loop(void) {
     // Si la cara no está activa, salir
-   /* if (bomb.faceState[FACE_MORSE] == 0) {
+    if (bomb.faceState[FACE_MORSE] == 0) {
         SetRGB(0,0,0);
         return;
     }
-*/
+
     uint32_t ahora = HAL_GetTick();
 
     // ---------------------------------------------------------

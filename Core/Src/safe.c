@@ -89,30 +89,17 @@ void Safe_Init(void) {
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    // 4. CONFIGURAR EL MÓDULO ADC (El cerebro analógico)
-    hadc1.Instance = ADC1;
-    hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-    hadc1.Init.Resolution = ADC_RESOLUTION_12B; // 12 bits (0-4095)
-    hadc1.Init.ScanConvMode = DISABLE; // Leeremos manualmente uno a uno
-    hadc1.Init.ContinuousConvMode = DISABLE;
-    hadc1.Init.DiscontinuousConvMode = DISABLE;
-    hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-    hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-    hadc1.Init.NbrOfConversion = 1;
-    hadc1.Init.DMAContinuousRequests = DISABLE;
-    hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-    HAL_ADC_Init(&hadc1);
+    // 4. CONFIGURAR EL MÓDULO ADC (El cerebro analógico) LO HACE EL MAIN
 }
 
 void Safe_Loop(void) {
 
     // --- FILTRO: Solo jugar si la cara está activa ---
-	/*if (bomb.faceState[FACE_SAFE] == 0) {
+	if (bomb.faceState[FACE_SAFE] == 0) {
     	// Apagar leds por si acaso
     	for(int i=0; i<3; i++) HAL_GPIO_WritePin(GPIOE, LED_PINS[i], GPIO_PIN_RESET);
     	return;
-    }*/
+    }
 
     // Si ya ganamos, LEDs fijos
     if (bomb.faceSolved[FACE_SAFE] == 1) {
