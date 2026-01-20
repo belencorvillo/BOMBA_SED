@@ -167,7 +167,6 @@ int main(void)
   LCD_SetCursor(1, 0); // Fila 1, Columna 0
   LCD_Print("BOMBA ACTIVA");
 
-
   // Inicializar variables del juego
   Game_Init();
 
