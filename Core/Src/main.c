@@ -29,6 +29,7 @@
 #include "safe.h"
 #include "morse.h"
 #include "ili9341.h"
+#include "asteroids.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,6 +51,7 @@
 extern ADC_HandleTypeDef hadc1;
 
 I2C_HandleTypeDef hi2c2;
+I2C_HandleTypeDef hi2c1;
 
 SPI_HandleTypeDef hspi1;
 
@@ -65,6 +67,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_ADC1_Init(void);
@@ -117,6 +120,7 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
+  MX_I2C1_Init();
   MX_I2C2_Init();
   MX_SPI1_Init();
   MX_ADC1_Init();
@@ -126,6 +130,7 @@ int main(void)
   AirDef_Init();
   Safe_Init();
   Morse_Init();
+  Asteroids_Init();
 
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   __HAL_RCC_GPIOB_CLK_ENABLE(); // Encender reloj Puerto B
@@ -162,7 +167,7 @@ int main(void)
   LCD_SetCursor(1, 0); // Fila 1, Columna 0
   LCD_Print("BOMBA ACTIVA");
 
-*/
+
   // Inicializar variables del juego
   Game_Init();
 
@@ -181,6 +186,7 @@ int main(void)
 	  else if (bomb.faceState[FACE_AIRDEF] == 1){AirDef_Loop();}
 	  else if (bomb.faceState[FACE_SAFE] == 1){Safe_Loop();}
 	  else if (bomb.faceState[FACE_MORSE] == 1){Morse_Loop();}
+	  else if (bomb.faceState[FACE_GYRO] == 1){Asteroids_Loop();}
 
 
 
@@ -286,6 +292,35 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
+
+}
+
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
 
 }
 

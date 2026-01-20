@@ -51,8 +51,9 @@ Hardware: **STM32F407G-DISC1**
 
 | **Altavoz** |  `PC6` | GPIO_Output / TIM3 | `1` = ON |
 
-| **Pantalla TFT** |  CS => PA8, RESET=>PC8, DC/RS => PC9, MOSI=> PA7, SCK => PA5, VCC => 3.3V, GND => GND, LED => 3.3V |
+| **Pantalla TFT** |  CS => `PA8`, RESET=> `PC8`, DC/RS => `PC9`, MOSI=> `PA7`, SCK => `PA5`, VCC => 3.3V, GND => GND, LED => 3.3V |
 
+| **Acelerómetro** | `PB6` `PB9` | I2C2_SCL, I2C2_SDA | - |
 
 
 
