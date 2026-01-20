@@ -32,7 +32,7 @@ const uint32_t COMBINACION[3] = { 2500, 1200, 500 };
 static uint16_t LED_PINS[3] = {GPIO_PIN_2, GPIO_PIN_4, GPIO_PIN_5};
 
 // Variable para manejar el ADC
-ADC_HandleTypeDef hadc1;
+extern ADC_HandleTypeDef hadc1;
 
 extern GameContext bomb;
 

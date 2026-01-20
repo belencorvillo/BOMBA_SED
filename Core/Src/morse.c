@@ -22,10 +22,10 @@ const char* DICCIONARIO[] = { "SOS", "BOMBA", "HOLA", "TUNEL", "CLAVE" };
 #define TIEMPO_SILENCIO   1500  // > 1500ms = Fin de letra
 
 // PINES DEL LED RGB (Puerto E)
-#define PIN_R     GPIO_PIN_0 // PE0
-#define PIN_G     GPIO_PIN_1 // PE1
-#define PIN_B     GPIO_PIN_6 // PE6
-#define PUERTO_LEDS GPIOE
+#define PIN_R     GPIO_PIN_13 // PD13
+#define PIN_G     GPIO_PIN_14 // PD14
+#define PIN_B     GPIO_PIN_15 // PD15
+#define PUERTO_LEDS GPIOD
 
 // PIN DEL BOTÓN (Puerto B)
 // Usamos PB14 para evitar conflicto con el sensor MEMS en PE3
@@ -178,15 +178,14 @@ void Morse_Loop(void) {
 
     case MORSE_ANIM_WIN:
     	// Cambia cada 100ms
-    	        if (ahora - timer_animacion > 100) {
-    	            timer_animacion = ahora;
-    	            contador_parpadeos++;
+    			if (ahora - timer_animacion > 50) {
+    	    	            timer_animacion = ahora;
+    	    	            contador_parpadeos++;
+    	    	            SetRGB(0,(contador_parpadeos % 2), 0); // Verde parpadeando
 
-    	            // Alterna entre VERDE y AZUL (muy chulo con RGB)
-    	            if (contador_parpadeos % 2 != 0) SetRGB(0, 1, 0); // Verde
-    	            else SetRGB(0, 0, 1); // Azul
-
-    	            if (contador_parpadeos >= 8) { // 8 cambios
+    	    	            // Dura 20 cambios (aprox 1 segundo total)
+    	    	        if (contador_parpadeos >= 20) {
+    	    	          SetRGB(0, 0, 0);
     	                estado_actual = MORSE_IDLE;
     	                indice_letra_actual++;
     	                indice_buffer = 0;
@@ -246,7 +245,7 @@ void Morse_Loop(void) {
     // 3. SILENCIO LARGO (Procesar letra)
     // Si lleva suelto más de X tiempo y tenemos algo en el buffer
     else if (btn_now == 1 && (ahora - tiempo_ultimo_evento > TIEMPO_SILENCIO) && indice_buffer > 0) {
-    	SetRGB(0, 1, 0);
+    	//SetRGB(0, 1, 0);
         char letra = MorseToChar(buffer_morse);
         debug_letra = letra;
 

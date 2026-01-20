@@ -13,7 +13,7 @@
 // ==========================================
 // 1 = Palanca ACTIVADA (Cerrada a tierra), 0 = Palanca DESACTIVADA
 // Cambia esto para definir tu clave secreta:
-const uint8_t PATRON_OBJETIVO[6] = {1, 0, 1, 1, 0, 1};
+const uint8_t PATRON_OBJETIVO[6] = {1, 0, 0, 1, 0, 1};
 
 // ==========================================
 // DEFINICIÓN DE PINES (CONFIGURACIÓN FINAL)

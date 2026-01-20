@@ -49,6 +49,11 @@ static void Refresh_TFT_Countdown(void) {
         return;
     }
 
+    //Añadimos esto para que no tenga conflicto con la imagen del giroscopio
+    if (bomb.faceState[FACE_GYRO] == 1) {
+            return;
+        }
+
     // CASO 2: Pasaron los 15s -> Animación TIC TAC
     if (HAL_GetTick() - last_anim_time > 500) {
         last_anim_time = HAL_GetTick();
@@ -171,7 +176,7 @@ void Game_Update(void) {
 
 	  // ESTADO: CUENTA ATRÁS (Juego Activo)
 	        case STATE_COUNTDOWN:
-/*
+
 	        	// Si sueltan la seta (PA0 == 0) a mitad de partida
 				if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET) {
 
@@ -189,7 +194,7 @@ void Game_Update(void) {
 					bomb.currentState = STATE_IDLE;
 					break; // Salimos del switch
 				}
-*/
+
 
 
 
