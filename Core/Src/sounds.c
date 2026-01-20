@@ -43,7 +43,7 @@ void Sound_Buzzer_Arming(void) {
 //FUNCIONES ALTAVOZ
 
 // Función interna para tocar nota en el altavoz
-static void Speaker_Tone(uint16_t period, uint16_t duration_ms) {
+void Speaker_Tone(uint16_t period, uint16_t duration_ms) {
     if (period > 0) {
         __HAL_TIM_SET_AUTORELOAD(&htim3, period);
         __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, period / 2); // 50% Duty
@@ -67,9 +67,13 @@ void Sound_Speaker_Startup(void) {
 
 void Sound_Speaker_WinSmall(void) {
     // Pequeña victoria (Cara resuelta)
-    Speaker_Tone(NOTE_E5, 100);
-    HAL_Delay(50);
-    Speaker_Tone(NOTE_C6, 200);
+	Speaker_Tone(523, 80);  // Do (C5)
+	HAL_Delay(10);          // Pequeña pausa para separar notas
+	Speaker_Tone(659, 80);  // Mi (E5)
+	HAL_Delay(10);
+	Speaker_Tone(784, 80);  // Sol (G5)
+	HAL_Delay(10);
+	Speaker_Tone(1047, 200);// Do (C6) - Final largo
 }
 
 void Sound_Speaker_WinTotal(void) {
@@ -111,4 +115,18 @@ void Sound_Speaker_Explosion(void) {
 
     HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
     HAL_Delay(500); // Silencio dramático post-explosión
+}
+
+
+void Sound_Play_Tone(uint16_t frequency, uint16_t duration_ms) {
+    if (frequency > 0) {
+        // Calculamos periodo para 1MHz (Prescaler 83)
+        uint32_t period = 1000000 / frequency;
+
+        __HAL_TIM_SET_AUTORELOAD(&htim3, period);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, period / 2);
+        HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+    }
+    HAL_Delay(duration_ms);
+    HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
 }

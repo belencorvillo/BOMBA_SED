@@ -297,7 +297,7 @@ void Game_TimerTick(void) {
 }
 
 void Game_RegisterWin(uint8_t face_id) {
-
+/*
 	//    CASO: VICTORIA TOTAL
 	if (bomb.gamesLeft == 0) {
 	    bomb.currentState = STATE_DEFUSED;
@@ -343,6 +343,41 @@ void Game_RegisterWin(uint8_t face_id) {
 			ILI9341_FillScreen(ILI9341_BLACK);
 		}
 }
+*/
+
+	// 1. Verificación de seguridad
+	    // Si no estamos jugando o la cara ya está resuelta, nos vamos.
+	    if (bomb.currentState != STATE_COUNTDOWN || bomb.faceSolved[face_id] == 1) {
+	        return;
+	    }
+
+	    // 2. Marcar cara como resuelta
+	    bomb.faceSolved[face_id] = 1;
+	    bomb.faceState[face_id] = 0; // Apagar minijuego
+	    bomb.gamesLeft--;            // Restar contador global
+
+	    // 3. DECISIÓN CRÍTICA: ¿Es la última cara o quedan más?
+
+	    if (bomb.gamesLeft == 0) {
+	        // CASO A: ERA LA ÚLTIMA -> VICTORIA TOTAL
+	        // No tocamos nada de sonido aquí. Cambiamos estado y nos vamos.
+	        // El estado STATE_DEFUSED se encargará de la música final.
+	        bomb.currentState = STATE_DEFUSED;
+	        return;
+	    } else {
+	        // CASO B: AÚN QUEDAN JUEGOS -> VICTORIA PARCIAL
+	        // Aquí sí reproducimos el sonido de "Cara Resuelta"
+	        Sound_Speaker_WinSmall(); // O Sound_Buzzer_WinSmall()
+
+	        // Mensaje en pantalla
+	        instructions_end_time = HAL_GetTick() + 2000;
+	        ILI9341_FillScreen(ILI9341_BLACK);
+	        ILI9341_FillRectangle(0, 80, 320, 80, ILI9341_GREEN);
+	        DrawCenteredText(110, "MODULO OK!", Font_16x26, ILI9341_BLACK, ILI9341_GREEN);
+	        HAL_Delay(1500);
+	        ILI9341_FillScreen(ILI9341_BLACK);
+	    }
+
 }
 
 void Game_RegisterMistake(void) {

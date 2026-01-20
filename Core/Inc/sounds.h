@@ -24,6 +24,7 @@
 // --- FUNCIONES ---
 
 void Sound_Init(void);
+void Sound_Play_Tone(uint16_t frequency, uint16_t duration_ms);
 
 // BUZZER (PA6) - Sonidos Tácticos
 void Sound_Buzzer_Beep(void);         // Bip normal (1s)
@@ -36,5 +37,6 @@ void Sound_Speaker_Siren(void);       // Sirena de pánico
 void Sound_Speaker_Explosion(void);   // BOOM
 void Sound_Speaker_WinSmall(void);    // Cara resuelta
 void Sound_Speaker_WinTotal(void);    // Juego ganado
+void Speaker_Tone(uint16_t period, uint16_t duration_ms);
 
 #endif /* INC_SOUNDS_H_ */
