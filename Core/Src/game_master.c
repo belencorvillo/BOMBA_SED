@@ -3,6 +3,8 @@
 #include "game_master.h"
 #include "lcd_i2c.h"
 #include "sounds.h"
+#include "safe.h"
+#include "airdef.h"
 #include <stdio.h>
 
 //INCLUDES PARA LA PANTALLA OLED
@@ -54,6 +56,20 @@ static void Refresh_TFT_Countdown(void) {
             return;
         }
 
+    if (bomb.faceState[FACE_MORSE] == 1) {
+            //  Usamos anim_frame para pintar solo una vez y no parpadear
+            static uint8_t morse_pintado = 0;
+            if (morse_pintado == 0) {
+                 ILI9341_FillScreen(ILI9341_BLACK);
+                 DrawCenteredText(60, "CODIGO MORSE", Font_16x26, ILI9341_CYAN, ILI9341_BLACK);
+                 DrawCenteredText(100, "ESCRIBE:", Font_11x18, ILI9341_WHITE, ILI9341_BLACK);
+                 DrawCenteredText(130, "S O S", Font_16x26, ILI9341_YELLOW, ILI9341_BLACK);
+                 DrawCenteredText(170, "... --- ...", Font_16x26, ILI9341_WHITE, ILI9341_BLACK);
+                 morse_pintado = 1;
+            }
+            return; // Salimos para que no pinte Tic Tac
+        }
+
     // CASO 2: Pasaron los 15s -> Animación TIC TAC
     if (HAL_GetTick() - last_anim_time > 500) {
         last_anim_time = HAL_GetTick();
@@ -71,7 +87,7 @@ static void Refresh_TFT_Countdown(void) {
 
 //    FUNCIÓN PARA REINICIAR VARIABLES
 static void Reset_Game_Variables(void) {
-    bomb.timeRemaining = 300; // Reset Tiempo
+    bomb.timeRemaining = 180; // Reset Tiempo
     bomb.gamesLeft = TOTAL_FACES; // Reset Juegos
     bomb.mistakes = 0;
 
@@ -80,6 +96,11 @@ static void Reset_Game_Variables(void) {
         bomb.faceSolved[i] = 0;
         bomb.faceState[i] = 0;
     }
+
+    //Para apagar los leds de las caras que lo necesitan:
+   AirDef_Reset();
+   Safe_Reset();
+   Morse_Reset();
 }
 
 //      FUNCIÓN INICIALIZACIÓN:
@@ -89,7 +110,7 @@ void Game_Init(void) {
     bomb.currentState = STATE_IDLE;
     last_known_state = STATE_IDLE;
 
-    bomb.timeRemaining = 300; // TIEMPO INICIAL
+    bomb.timeRemaining = 180; // TIEMPO INICIAL
     bomb.gamesLeft = TOTAL_FACES; //5
     Reset_Game_Variables();
 
@@ -118,10 +139,14 @@ void Game_ActivateFace(uint8_t face_id) {
 
         bomb.faceState[face_id] = 1; // 1 = ACTIVO (Jugando)
 
-        //Disparamos temporizador de la TFT:
-        //Las instrucciones se muestran 15 segundos
-
-        instructions_end_time = HAL_GetTick() + 15000;
+        // TIEMPOS DE INSTRUCCIONES PERSONALIZADOS
+		if (face_id == FACE_MORSE || face_id == FACE_GYRO) {
+			// Morse y Gyro: Solo 5 segundos de instrucciones
+			instructions_end_time = HAL_GetTick() + 5000;
+		} else {
+			// Resto de juegos: 15 segundos estándar
+			instructions_end_time = HAL_GetTick() + 15000;
+		}
         current_instruction_face = face_id;
 
         //Pintamos las instrucciones de la cara en la TFT
@@ -189,7 +214,7 @@ void Game_Update(void) {
 					ILI9341_FillScreen(ILI9341_BLUE);
 					DrawCenteredText(110, "CANCELADO", Font_16x26, ILI9341_WHITE, ILI9341_BLUE);
 
-					HAL_Delay(1000);
+
 					Reset_Game_Variables(); // Limpiar datos
 					bomb.currentState = STATE_IDLE;
 					break; // Salimos del switch
@@ -302,79 +327,32 @@ void Game_TimerTick(void) {
 }
 
 void Game_RegisterWin(uint8_t face_id) {
-/*
-	//    CASO: VICTORIA TOTAL
-	if (bomb.gamesLeft == 0) {
-	    bomb.currentState = STATE_DEFUSED;
-	    return;
-	}
 
 
-	//     CASO: VICTORIA DE UNA CARA
-
-
-	// Solo hacemos caso si estamos jugando y esa cara NO estaba ya resuelta
-	if (bomb.currentState == STATE_COUNTDOWN) {
-
-		// Verificamos que el ID es válido y que no la habían resuelto ya
-		if (face_id < TOTAL_FACES && bomb.faceSolved[face_id] == 0) {
-
-			//  Marcamos cara específica como resuelta
-			bomb.faceSolved[face_id] = 1;
-			//Desactivamos estado
-			bomb.faceState[face_id] = 0;
-			//  Restamos uno al contador global
-			bomb.gamesLeft--;
-
-			// Si al restar queda 0, ganamos todo
-			if (bomb.gamesLeft == 0) {
-				bomb.currentState = STATE_DEFUSED;
-				return;
-			}
-
-			// CÓDIGO DE LUCES
-			// LED_SetFaceColor(face_id, COLOR_GREEN);
-
-			// Sonido de cara resulta
-			Sound_Speaker_WinSmall();
-
-			//Mensaje de éxito en la OLED
-			instructions_end_time = 0;
-			// Mostrar OK en TFT
-			ILI9341_FillScreen(ILI9341_BLACK);
-			ILI9341_FillRectangle(0, 80, 320, 80, ILI9341_GREEN); // Banda verde
-			DrawCenteredText(110, "MODULO OK!", Font_16x26, ILI9341_BLACK, ILI9341_GREEN);
-			HAL_Delay(1500);
-			ILI9341_FillScreen(ILI9341_BLACK);
-		}
-}
-*/
-
-	// 1. Verificación de seguridad
+	//  Verificación de seguridad:
 	    // Si no estamos jugando o la cara ya está resuelta, nos vamos.
 	    if (bomb.currentState != STATE_COUNTDOWN || bomb.faceSolved[face_id] == 1) {
 	        return;
 	    }
 
-	    // 2. Marcar cara como resuelta
+	    //  Marcar cara como resuelta
 	    bomb.faceSolved[face_id] = 1;
 	    bomb.faceState[face_id] = 0; // Apagar minijuego
 	    bomb.gamesLeft--;            // Restar contador global
 
-	    // 3. DECISIÓN CRÍTICA: ¿Es la última cara o quedan más?
+	    // ¿Es la última cara o quedan más?
 
 	    if (bomb.gamesLeft == 0) {
 	        // CASO A: ERA LA ÚLTIMA -> VICTORIA TOTAL
-	        // No tocamos nada de sonido aquí. Cambiamos estado y nos vamos.
-	        // El estado STATE_DEFUSED se encargará de la música final.
+	        //Vamos al estado de bomba desactivada: STATE_DEFUSED
 	        bomb.currentState = STATE_DEFUSED;
 	        return;
 	    } else {
 	        // CASO B: AÚN QUEDAN JUEGOS -> VICTORIA PARCIAL
-	        // Aquí sí reproducimos el sonido de "Cara Resuelta"
-	        Sound_Speaker_WinSmall(); // O Sound_Buzzer_WinSmall()
+	        // reproducimos el sonido de "Cara Resuelta"
+	        Sound_Speaker_WinSmall();
 
-	        // Mensaje en pantalla
+	        // Mensaje de acierto parcial en pantalla
 	        instructions_end_time = HAL_GetTick() + 2000;
 	        ILI9341_FillScreen(ILI9341_BLACK);
 	        ILI9341_FillRectangle(0, 80, 320, 80, ILI9341_GREEN);
@@ -398,8 +376,7 @@ void Game_RegisterMistake(void) {
 
         // Feedback sonoro y visual de error
         ILI9341_FillRectangle(0, 0, 320, 20, ILI9341_RED);
-        Sound_Buzzer_Beep();
-        HAL_Delay(200);
+        Sound_Play_Tone(150, 300);
 		ILI9341_FillRectangle(0, 0, 320, 20, ILI9341_BLACK);
     }
 }

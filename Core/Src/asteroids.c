@@ -8,6 +8,8 @@
 
 extern I2C_HandleTypeDef hi2c1;
 
+extern uint32_t instructions_end_time;
+
 // Variables del acelerómetro
 static int16_t Accel_X_RAW = 0;
 static int16_t Accel_Y_RAW = 0;
@@ -51,6 +53,10 @@ void Asteroids_Loop(void) {
         juego_iniciado = 0;
         return;
     }
+
+    if (HAL_GetTick() < instructions_end_time) {
+            return;
+        }
 
     // INICIO DE PARTIDA
     if (juego_iniciado == 0) {

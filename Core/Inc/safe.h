@@ -13,5 +13,6 @@
 
 void Safe_Init(void);
 void Safe_Loop(void);
+void Safe_Reset(void);
 
 #endif /* INC_SAFE_H_ */

@@ -4,8 +4,8 @@
 extern TIM_HandleTypeDef htim3;
 
 void Sound_Init(void) {
-    // Apagar Buzzer (PA6)
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
+    // Apagar Buzzer (PA4)
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
     // El Altavoz (PC6) empieza apagado por el PWM
 }
 
@@ -14,9 +14,9 @@ void Sound_Init(void) {
 
 // Función interna para el buzzer
 static void Buzzer_Tone(uint16_t duration_ms) {
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);   // ON
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
     HAL_Delay(duration_ms);
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET); // OFF
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 }
 
 void Sound_Buzzer_Beep(void) {
@@ -106,7 +106,7 @@ void Sound_Speaker_Explosion(void) {
     // SONIDO EXPLOSIÓN
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 
-    // Bajamos desde 1000 (Agudo) hasta 10000 (Muy grave/Click)
+
     for (int i = 1000; i < 15000; i += 50) {
         __HAL_TIM_SET_AUTORELOAD(&htim3, i);
         __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, i / 2);
@@ -114,7 +114,7 @@ void Sound_Speaker_Explosion(void) {
     }
 
     HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-    HAL_Delay(500); // Silencio dramático post-explosión
+    HAL_Delay(500); // Silencio post-explosión
 }
 
 

@@ -7,11 +7,8 @@
 // Importamos la variable hi2c1 que está definida en main.c
 extern I2C_HandleTypeDef hi2c2;
 
-// Dirección del dispositivo I2C (0x27 es la más común, si falla prueba 0x3F)
-// Se desplaza 1 bit a la izquierda porque el bit 0 es R/W
 
 
-//#define LCD_ADDR (0x27 << 1)
 #define LCD_ADDR (0x27 << 1)
 
 // Comandos internos
@@ -78,12 +75,12 @@ void LCD_Init(void) {
 
 void LCD_Clear(void) {
     lcd_send_cmd(0x01); // Comando borrar
-    HAL_Delay(2);       // Este comando es lento, necesita espera
+    HAL_Delay(2);
 }
 
 void LCD_SetCursor(uint8_t row, uint8_t col) {
     uint8_t mask;
-    // La fila 0 empieza en 0x80, la fila 1 en 0xC0
+
     mask = (row == 0) ? 0x80 : 0xC0;
     lcd_send_cmd(mask | col);
 }

@@ -168,7 +168,7 @@ void SimonDice_Loop(void) {
             if (pasoUsuario == nivelActual) {
                 nivelActual++;
                 pasoUsuario = 0;
-                if (nivelActual > 8) {
+                if (nivelActual > 6) {
                     animacionGanar();
                     Game_RegisterWin(FACE_SIMON);
                     juegoActivo = 0;
@@ -177,8 +177,8 @@ void SimonDice_Loop(void) {
                 }
             }
         } else {
+        	Game_RegisterMistake();
             animacionPerder();
-            Game_RegisterMistake();
             juegoActivo = 0;
         }
     }

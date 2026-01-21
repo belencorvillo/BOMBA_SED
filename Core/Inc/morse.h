@@ -13,5 +13,6 @@
 
 void Morse_Init(void);
 void Morse_Loop(void);
+void Morse_Reset(void);
 
 #endif /* INC_MORSE_H_ */

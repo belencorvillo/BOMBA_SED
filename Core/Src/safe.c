@@ -13,7 +13,7 @@
 // CONFIGURACIÓN DE LA COMBINACIÓN SECRETA
 // ==========================================
 // El ADC lee de 0 a 4095.
-// Elige 3 números entre ese rango para tu clave.
+// Elegimos 3 números entre ese rango para la clave.
 const uint32_t COMBINACION[3] = { 2500, 1200, 500 };
 
 // ==========================================
@@ -63,6 +63,14 @@ uint32_t Read_ADC_Channel(uint32_t channel) {
 // ==========================================
 // FUNCIONES PRINCIPALES
 // ==========================================
+// Función pública para apagar los LEDs de la Caja Fuerte
+
+void Safe_Reset(void) {
+    // Recorremos los 3 LEDs definidos en el array y los apagamos
+    for(int i=0; i<3; i++) {
+        HAL_GPIO_WritePin(GPIOE, LED_PINS[i], GPIO_PIN_RESET);
+    }
+}
 
 void Safe_Init(void) {
     GPIO_InitTypeDef GPIO_InitStruct = {0};

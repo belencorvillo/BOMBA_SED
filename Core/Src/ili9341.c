@@ -64,7 +64,7 @@ void ILI9341_Init(void) {
     ILI9341_Select();
     ILI9341_Unselect();
 
-        // 1. Reset Físico (Despierta a la pantalla a la fuerza)
+        //  Reset Físico (Despierta a la pantalla a la fuerza)
         HAL_GPIO_WritePin(ILI9341_RES_GPIO_Port, ILI9341_RES_Pin, GPIO_PIN_RESET); // Baja a 0V
         HAL_Delay(200); // Espera 200ms
         HAL_GPIO_WritePin(ILI9341_RES_GPIO_Port, ILI9341_RES_Pin, GPIO_PIN_SET);   // Sube a 3.3V
@@ -97,7 +97,7 @@ void ILI9341_Init(void) {
     Init_WriteData(0x78);
 
     // Driver timing control B
-    ILI9341_WriteCommand(0xEA); // Corregido el error tipográfico (era 0EA)
+    ILI9341_WriteCommand(0xEA);
     Init_WriteData(0x00);
     Init_WriteData(0x00);
 
@@ -283,7 +283,6 @@ void ILI9341_DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16
 
 // Función que he añadido para textos centrados:
 
-// Función para dibujar textos centrados
 void DrawCenteredText(uint16_t y, const char* str, FontDef font, uint16_t color, uint16_t bgcolor) {
     uint16_t width = strlen(str) * font.width;
     uint16_t x = (ILI9341_WIDTH - width) / 2;

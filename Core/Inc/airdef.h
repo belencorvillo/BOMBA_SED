@@ -17,4 +17,6 @@ void AirDef_Init(void);
 // Contiene la lógica del juego (se llama constantemente en el while)
 void AirDef_Loop(void);
 
+void AirDef_Reset(void);
+
 #endif /* INC_AIRDEF_H_ */

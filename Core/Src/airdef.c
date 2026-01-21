@@ -9,14 +9,14 @@
 #include "game_master.h"
 
 // ==========================================
-// CONFIGURACIÓN DE LA SECUENCIA "TOP GUN"
+// CONFIGURACIÓN DE LA SECUENCIA DE ACIERTO
 // ==========================================
 // 1 = Palanca ACTIVADA (Cerrada a tierra), 0 = Palanca DESACTIVADA
-// Cambia esto para definir tu clave secreta:
+
 const uint8_t PATRON_OBJETIVO[6] = {1, 0, 0, 1, 0, 1};
 
 // ==========================================
-// DEFINICIÓN DE PINES (CONFIGURACIÓN FINAL)
+// DEFINICIÓN DE PINES
 // ==========================================
 
 // 1. LOS 6 INTERRUPTORES (Puerto C: 0 al 5)
@@ -38,6 +38,14 @@ extern GameContext bomb;
 // FUNCIONES
 // ==========================================
 
+// Función pública para forzar el apagado de los LEDs
+void AirDef_Reset(void) {
+    for(int i=0; i<6; i++) {
+        HAL_GPIO_WritePin(LED_R_PORTS[i], LED_R_PINS[i], GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(LED_G_PORTS[i], LED_G_PINS[i], GPIO_PIN_RESET);
+    }
+}
+
 void AirDef_Init(void) {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -49,7 +57,7 @@ void AirDef_Init(void) {
 
     // 2. CONFIGURAR INTERRUPTORES (INPUT PULL-UP)
     // Usamos Pull-Up interna para no soldar resistencias.
-    // Al cerrar el interruptor, debe conectar a GND.
+
     for (int i = 0; i < 6; i++) {
         GPIO_InitStruct.Pin = SW_PINS[i];
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -125,7 +133,7 @@ void AirDef_Loop(void) {
 
     // --- COMPROBAR VICTORIA ---
     if (interruptores_correctos == 6) {
-        // ¡Todas las palancas están en su sitio!
+        // Todas las palancas están en su sitio:
         // Notificamos al Game Master
         Game_RegisterWin(FACE_AIRDEF);
     }
