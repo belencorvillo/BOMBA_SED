@@ -183,9 +183,7 @@ int main(void)
 
 	  if (bomb.faceState[FACE_SIMON] == 1) {SimonDice_Loop();}
 	  else if (bomb.faceState[FACE_AIRDEF] == 1){AirDef_Loop();}
-	  else if (bomb.faceState[FACE_SAFE] == 1){
-		  Safe_Loop();
-	  }
+	  else if (bomb.faceState[FACE_SAFE] == 1){Safe_Loop();}
 	  else if (bomb.faceState[FACE_MORSE] == 1){Morse_Loop();}
 	  else if (bomb.faceState[FACE_GYRO] == 1){Asteroids_Loop();}
 
